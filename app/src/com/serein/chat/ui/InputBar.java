@@ -36,6 +36,8 @@ public final class InputBar extends LinearLayout {
 
         void onDraftChanged(String text);
 
+        void onRemoveFile(Models.FileRef f);
+
         void onThinkingLevelChanged(int level);
     }
 
@@ -344,7 +346,17 @@ public final class InputBar extends LinearLayout {
             LinearLayout box = Ui.row(getContext());
             box.setBackground(Ui.roundStroke(t.bgLayer2, t.borderL2, 1, 10));
             box.setPadding(Ui.dp(9), Ui.dp(6), Ui.dp(6), Ui.dp(6));
-            box.addView(Ui.icon(getContext(), R.drawable.ic_file, t.labelTertiary, 14));
+            if (f.image && f.localPath != null && !f.localPath.isEmpty()) {
+                android.widget.ImageView thumb = new android.widget.ImageView(getContext());
+                android.graphics.Bitmap bmp = Ui.loadThumb(f.localPath, 96);
+                if (bmp != null) thumb.setImageBitmap(bmp);
+                thumb.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+                LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(Ui.dp(22), Ui.dp(22));
+                box.addView(thumb, tlp);
+                thumb.setOnClickListener(v -> Ui.previewImage(getContext(), f.localPath));
+            } else {
+                box.addView(Ui.icon(getContext(), R.drawable.ic_file, t.labelTertiary, 14));
+            }
             TextView name = Ui.text(getContext(), f.name, 12, t.labelSecondary);
             name.setMaxWidth(Ui.dp(110));
             name.setSingleLine(true);
@@ -357,6 +369,10 @@ public final class InputBar extends LinearLayout {
             if ("uploading".equals(f.status)) {
                 box.addView(Ui.icon(getContext(), R.drawable.ic_refresh, t.labelCaption, 12));
             }
+            TextView del = Ui.text(getContext(), "×", 15, t.labelTertiary);
+            del.setPadding(Ui.dp(6), 0, Ui.dp(2), 0);
+            del.setOnClickListener(v -> host.onRemoveFile(f));
+            box.addView(del);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
             lp.rightMargin = Ui.dp(8);

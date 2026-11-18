@@ -156,6 +156,29 @@ public final class MessageRow extends LinearLayout {
     }
 
     private View fileChip(Models.FileRef f) {
+        if (f.image && f.localPath != null && !f.localPath.isEmpty()) {
+            android.widget.ImageView iv = new android.widget.ImageView(getContext());
+            android.graphics.Bitmap bmp = Ui.loadThumb(f.localPath, 320);
+            if (bmp != null) iv.setImageBitmap(bmp);
+            iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            int w = Math.min(bmp == null ? Ui.dp(120) : bmp.getWidth(), Ui.dp(160));
+            int h = bmp == null ? Ui.dp(120)
+                    : Math.max(Ui.dp(60), (int) (w * (bmp.getHeight() * 1f / bmp.getWidth())));
+            iv.setLayoutParams(new LinearLayout.LayoutParams(w, h));
+            iv.setOnClickListener(v -> {
+                if (getContext() instanceof android.app.Activity) {
+                    Ui.previewImage(getContext(), f.localPath);
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(w, h);
+            lp.rightMargin = Ui.dp(6);
+            iv.setLayoutParams(lp);
+            return iv;
+        }
+        return fileChipText(f);
+    }
+
+    private View fileChipText(Models.FileRef f) {
         LinearLayout box;
         if (f.image && f.localPath != null && !f.localPath.isEmpty()) {
             box = new LinearLayout(getContext());

@@ -217,6 +217,47 @@ public final class Ui {
         return dp(48);
     }
 
+
+    /** 按最大边采样解码本地图片，避免大图 OOM。 */
+    public static android.graphics.Bitmap loadThumb(String path, int maxPx) {
+        try {
+            android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            android.graphics.BitmapFactory.decodeFile(path, o);
+            int scale = 1;
+            int longest = Math.max(o.outWidth, o.outHeight);
+            while (longest / scale > maxPx) scale *= 2;
+            android.graphics.BitmapFactory.Options o2 = new android.graphics.BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            return android.graphics.BitmapFactory.decodeFile(path, o2);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** 全屏预览本地图片：点击任意处关闭。 */
+    public static void previewImage(android.content.Context c, String path) {
+        if (path == null || path.isEmpty()) return;
+        android.widget.FrameLayout root = new android.widget.FrameLayout(c);
+        root.setBackgroundColor(0xF2000000);
+        android.widget.ImageView iv = new android.widget.ImageView(c);
+        iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeFile(path);
+        if (bmp == null) {
+            toast(c, "无法打开图片");
+            return;
+        }
+        iv.setImageBitmap(bmp);
+        root.addView(iv, new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        final android.app.Dialog d = new android.app.Dialog(c,
+                android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        root.setOnClickListener(v -> d.dismiss());
+        d.setContentView(root);
+        d.show();
+    }
+
     public static void toast(Context c, CharSequence msg) {
         if (c == null) c = appContext;
         if (c == null) return;

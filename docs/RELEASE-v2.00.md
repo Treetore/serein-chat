@@ -47,3 +47,11 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 
 ### 第二批校验
 - SHA-256：\$sha
+
+### 热修复（同版本 2.00 · 第三批）
+- **附件体验**：输入区图片显示缩略图，所有附件（图片/文档）右侧带 × 可单独删除
+- **对话内图片预览**：消息气泡里的图片可直接点击全屏查看，点击任意处关闭
+- **协议差异提示**：OpenAI（Chat Completions）协议附加文档时提示切换到 Anthropic / Responses
+
+### 第三批校验
+- SHA-256：\$sha

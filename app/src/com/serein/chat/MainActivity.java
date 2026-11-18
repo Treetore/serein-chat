@@ -1311,6 +1311,13 @@ public class MainActivity extends Activity implements
     }
 
     @Override
+    public void onRemoveFile(Models.FileRef f) {
+        if (f == null) return;
+        pendingFiles.remove(f);
+        inputBar.setFiles(pendingFiles);
+    }
+
+    @Override
     public void onDraftChanged(String text) {
         prefs.setDraft(sessionId, text);
     }
