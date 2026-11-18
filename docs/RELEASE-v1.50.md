@@ -14,13 +14,6 @@
 - **语音输入此前一直不可用**：`RECORD_AUDIO` 只在清单声明、从未运行时申请，`AudioRecord` 被系统拒绝。
   已补运行时权限请求，并在拒绝时给出提示。
 
-### 验证（Android 15 模拟器 + 服务端探针）
-```
-TTS text_len=1146 voice=stella   → 200，播放正常
-ASR bytes=586221                 → 200，输入框回填「这是语音识别的示例文本」
-授权弹窗 Allow → 录音 → 再次点击停止 → 自动上传
-```
-
 ### 校验
 - 包名 `com.serein.chat`，versionCode 7，minSdk 26 / targetSdk 35
 - SHA-256：`e021887ff41c8e4914f73f86ef50ee0216d43f61e68d0c37b523c7a35b57cc42`

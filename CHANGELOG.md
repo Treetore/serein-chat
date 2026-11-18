@@ -36,14 +36,6 @@
 - 平均耗时的分母改为有效行数（此前按总行数平均，得到 215ms 的错值）
 - 服务商列表里 Responses 协议此前显示成 "OpenAI"，现正确显示 "Responses"
 
-### 验证（真机 23113RKC6C / Android 16）
-```
-性能统计 / 近 18 次请求
-平均首字 677ms   最快 610ms · 最慢 745ms   ← 自洽
-平均速度 120 tok/s
-平均耗时 1.9s
-```
-
 ### 其它
 - 版本 1.80 → 1.90（versionCode 11）
 
@@ -59,10 +51,6 @@
 ### 调试增强
 - 调试 intent 新增 `-e newchat 1`：新建会话，便于联调标题生成
 
-### 验证（真机 23113RKC6C / Android 16，Responses 协议）
-发送「介绍一下量子纠缠的基本概念」→ 顶栏标题变为 **「量子纠缠基本概念」**
-（省略了"介绍一下""的"，确认是模型生成而非文本截断）
-
 ### 其它
 - 版本 1.70 → 1.80（versionCode 10）
 
@@ -75,19 +63,10 @@
     `response.output_item.done`（`web_search_call` 搜索来源）、`completed/incomplete/failed`（用量与结束态）
   - 参数映射：`reasoning.effort`、`max_output_tokens`、`temperature`、`safety_check`、`title`、联网工具
   - 用量映射：`input_tokens_details.cached_tokens` → 缓存命中
-- **调试入口**（本地联调用）：`am start -e proto responses -e autosend 1 -e android.intent.extra.TEXT "..."`
 
 ### 修复
 - 流式请求不再声明 gzip（改为 `Accept-Encoding: identity`），避免个别端点缺少 `Content-Encoding` 头时读到压缩字节
 - Responses 输入映射：`latest_reminder` 不再被当作 assistant 消息（否则服务端返回 400 `an assistant message must follow a user message`），改为并入紧随其后的用户消息前缀
-
-### 验证（真机 23113RKC6C / Android 16）
-```
-DSHRESP: code=200
-event=response.output_text.delta → response.output_text.done
-     → response.content_part.done → response.output_item.done → response.completed
-界面回复：「我是DeepSeek，由深度求索公司创造的AI助手…」用量正常
-```
 
 ### 其它
 - 版本 1.60 → 1.70（versionCode 9）
@@ -120,13 +99,6 @@ event=response.output_text.delta → response.output_text.done
 - **语音输入一直不可用**：`RECORD_AUDIO` 只在清单声明、从未运行时申请，导致 `AudioRecord`
   被系统拒绝（`permission denied: recording not allowed`）。已补运行时权限请求与拒绝提示
 
-### 验证（Android 15 模拟器 + 服务端探针）
-\`\`\`
-TTS text_len=1146 voice=stella        → 200，播放正常
-ASR bytes=586221                      → 200，输入框回填「这是语音识别的示例文本」
-授权弹窗 Allow → 录音 → 停止 → 自动上传
-\`\`\`
-
 ### 其它
 - README 增加社群入口（QQ 群）与顶部徽章
 - 版本号 1.40 → 1.50（versionCode 7）
@@ -138,9 +110,6 @@ ASR bytes=586221                      → 200，输入框回填「这是语音�
   按 URL 去重后统一列出
 - 引用条目展示 站点名 · 标题 · 引用原文，点击直接跳转原文
 - 仅含 citations（没有搜索块）的回复也能打开来源面板（此前为空）
-
-### 验证（模拟器）
-- 回复带 1 条 citation：面板列出 3 条来源，其中第 3 条为 citation（`api-docs.deepseek.com` + 引用原文）
 
 ### 其它
 - 版本号 1.30 → 1.40（versionCode 6）
@@ -154,13 +123,6 @@ ASR bytes=586221                      → 200，输入框回填「这是语音�
 - 对话请求补发 `anthropic-beta: files-api-2025-04-14`
 - 附件不再被「模型无视觉能力」拦截：文档解析不依赖视觉，图片仍按能力校验
 
-### 验证（模拟器 + 服务端探针）
-\`\`\`
-UPLOAD purpose=user_data bytes=398
-DOC blocks=['document:file:file_mock_1', 'text']
-ctx_roles=latest_reminder,user
-\`\`\`
-
 ### 其它
 - 版本号 1.20 → 1.30（versionCode 5）
 
@@ -171,11 +133,6 @@ ctx_roles=latest_reminder,user
   `{"role":"latest_reminder","content":"<日期>,<星期>,<地区>,App,<语言>"}`，随历史一并回传；
   设置新增「地区」项（可留空）
 - 深度思考搜索（`kind: deep_search`）使用独立文案，与普通联网搜索区分
-
-### 验证（模拟器 + 服务端探针）
-- 首轮：`ctx_roles=latest_reminder,user`
-- 次轮：`ctx_roles=latest_reminder,user,assistant,latest_reminder,user`
-- 标记内容示例：`2026-11-18,Wednesday,,App,English`
 
 ### 其它
 - 版本号 1.10 → 1.20（versionCode 4）
@@ -190,10 +147,6 @@ ctx_roles=latest_reminder,user
 - 消息级 `rawJson`：Anthropic 协议回传块数组，OpenAI 协议回传消息对象（含 `reasoning_content`）
 - 请求序列化时存在原始内容则原样回传，否则回退到纯文本拼接（老会话平滑兼容）
 - 缺少 `type` 的遗留块不参与回传，避免服务端 400
-
-### 验证（Android 15 模拟器 + 服务端探针）
-- 第二轮回传结构：`blocks=['thinking','server_tool_use','web_search_tool_result','text'] sig=True cites=1`
-- 思考块携带 `signature`，正文块携带 `citations`
 
 ### 其它
 - 版本号 1.01 → 1.10（versionCode 3）

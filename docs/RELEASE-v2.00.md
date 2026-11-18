@@ -24,7 +24,6 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 
 原因是 `android-actions/setup-android` 自动执行 `sdkmanager --licenses` 时没有传 `--sdk_root`。
 已改为手工安装 cmdline-tools 并显式传 `--sdk_root`，随后安装 `platforms;android-35`、
-`build-tools;36.1.0`、`platform-tools`，再执行 `build.ps1`。
 
 ### 校验
 - 包名 `com.serein.chat`，versionCode 12，minSdk 26 / targetSdk 35

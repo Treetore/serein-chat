@@ -7,13 +7,6 @@
 - 对话请求补发 `anthropic-beta: files-api-2025-04-14`
 - 文档解析不再受「模型无视觉能力」限制；图片仍按模型能力校验
 
-### 验证（Android 15 模拟器 + 服务端探针）
-```
-UPLOAD purpose=user_data bytes=398
-DOC blocks=['document:file:file_mock_1', 'text']
-ctx_roles=latest_reminder,user
-```
-
 ### 限制
 - 服务端解析最长 120 秒，超大文档需要等待；客户端读超时放宽到 300 秒
 - 纯文本类走 `user_data`，不计费；PDF/Word/PPT 解析按页计费

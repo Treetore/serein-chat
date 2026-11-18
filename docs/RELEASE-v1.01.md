@@ -15,11 +15,6 @@ easoning_effort。
 - 模型能力弹窗新增提示：开启思考或联网时，	emperature、	op_p 等采样参数由服务端接管
 - 版本号 1.0.0 → 1.01（versionCode 2）
 
-### 验证记录（Android 15 模拟器）
-- 三档切换实测请求体：output_config={"effort":"low|high|max"}，且不再出现 udget_tokens
-- 拒答链路：命中后界面显示本地拒答文案，下一轮请求上下文为 user,assistant,user，拒答轮已被剔除
-- 回归：流式渲染、自动跟随滚动、用量条、余额显示正常
-
 ### 校验
 - 包名 \com.serein.chat\，versionCode 2，minSdk 26 / targetSdk 35
 - 大小 659.9 KB

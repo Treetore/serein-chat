@@ -64,11 +64,9 @@
 
 | 欢迎页 | 流式对话 | 思考强度 |
 | --- | --- | --- |
-| ![](docs/screens/01-welcome-light.png) | ![](docs/screens/17-stream-follow.png) | ![](docs/screens/18-thinking-menu.png) |
 
 | 余额与用量 | 服务商 | 深色 |
 | --- | --- | --- |
-| ![](docs/screens/15-balance-panel.png) | ![](docs/screens/13-provider.png) | ![](docs/screens/02-chat-dark.png) |
 
 ## 构建
 

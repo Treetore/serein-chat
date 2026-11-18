@@ -176,41 +176,9 @@ public class MainActivity extends Activity implements
             main.postDelayed(this::openSettings, 350);
         }
 
-        applyDebugIntent(getIntent());
         handleSendIntent(getIntent());
     }
 
-    /**
-     * 调试入口：am start -e proto responses -e autosend 1
-     * 仅用于本地联调（切换当前服务商协议 / 自动发送一条消息），不影响正常使用。
-     */
-    private void applyDebugIntent(Intent it) {
-        if (it == null) return;
-        String proto = it.getStringExtra("proto");
-        if (proto != null && !proto.isEmpty()) {
-            Provider p = prefs.activeProvider();
-            if (p != null) {
-                p.protocol = proto;
-                prefs.updateProvider(p);
-                provider = prefs.activeProvider();
-                buildUi();
-            }
-        }
-        String open = it.getStringExtra("open");
-        if ("perf".equals(open)) {
-            main.postDelayed(() -> com.serein.chat.ui.SettingsPanels.perf(
-                    this, theme, modalHost, new com.serein.chat.data.Db(this), null), 900);
-        }
-        if ("1".equals(it.getStringExtra("newchat"))) {
-            main.postDelayed(this::newChat, 200);
-        }
-        if ("1".equals(it.getStringExtra("autosend"))) {
-            String text = it.getStringExtra(Intent.EXTRA_TEXT);
-            if (text != null && !text.trim().isEmpty()) {
-                main.postDelayed(() -> onSend(text.trim()), 700);
-            }
-        }
-    }
 
     /** 系统分享进来的文本填入输入框，避免用户再粘贴一次。 */
     private void handleSendIntent(Intent intent) {

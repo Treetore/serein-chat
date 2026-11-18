@@ -14,10 +14,6 @@ easoning_content）
 此前 assistant 轮只回传正文，思考签名、工具结果与引用全部丢失：思考连续性断裂、
 工具模式下可能触发 400、前缀缓存命中率被拉低。
 
-### 验证（Android 15 模拟器 + 服务端探针）
-第二轮回传结构实测：
-\blocks=['thinking', 'server_tool_use', 'web_search_tool_result', 'text'] sig=True cites=1
-\- 思考块带回 \signature- 正文块带回 \citations
 ### 校验
 - 包名 \com.serein.chat\，versionCode 3，minSdk 26 / targetSdk 35
 - SHA-256：\$sha
