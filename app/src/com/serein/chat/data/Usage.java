@@ -12,6 +12,8 @@ public final class Usage {
     /** 未命中缓存的输入 token */
     public int cacheMiss;
     public long elapsedMs;
+    /** 首字延迟（毫秒），用于本地性能观察 */
+    public long firstTokenMs;
 
     public boolean hasCache() {
         return cacheHit + cacheMiss > 0;
@@ -35,6 +37,7 @@ public final class Usage {
             o.put("ch", cacheHit);
             o.put("cm", cacheMiss);
             o.put("ms", elapsedMs);
+        if (firstTokenMs > 0) o.put("ft", firstTokenMs);
         } catch (Exception ignored) {
         }
         return o;
@@ -48,6 +51,7 @@ public final class Usage {
         u.cacheHit = o.optInt("ch");
         u.cacheMiss = o.optInt("cm");
         u.elapsedMs = o.optLong("ms");
+        u.firstTokenMs = o.optLong("ft");
         return u;
     }
 }

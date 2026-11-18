@@ -105,6 +105,7 @@ public class MainActivity extends Activity implements
     private Provider provider;
     private String balanceText;
     private long streamStartAt;
+    private long firstTokenAt;
     private boolean balanceInFlight;
     /** 用户是否停在底部：在底部时流式输出自动跟随 */
     private boolean followOutput = true;
@@ -813,6 +814,7 @@ public class MainActivity extends Activity implements
         if (cancelFlag != null) cancelFlag.set(true);
         cancelFlag = new AtomicBoolean(false);
         streamingTarget = reply;
+        firstTokenAt = 0;
         reply.status = Models.S_STREAMING;
 
         List<Models.Message> history = new ArrayList<>();
@@ -853,7 +855,10 @@ public class MainActivity extends Activity implements
                     if (cancelled.get() || text == null) return;
                     main.post(() -> {
                         Models.Block b = indexMap.get(index);
-                        if (b != null && b.type == Models.B_TEXT) b.appendText(text);
+                        if (b != null && b.type == Models.B_TEXT) {
+                            if (firstTokenAt == 0) firstTokenAt = System.currentTimeMillis();
+                            b.appendText(text);
+                        }
                         scheduleStreamUpdate();
                     });
                 }
@@ -1014,6 +1019,9 @@ public class MainActivity extends Activity implements
         if (Models.S_DONE.equals(status) && reply.hasVisibleText()) {
             reply.sentText = reply.plainText();
         }
+        if (reply.usage != null && firstTokenAt > 0 && streamStartAt > 0) {
+            reply.usage.firstTokenMs = Math.max(0, firstTokenAt - streamStartAt);
+        }
         if (reply.usage != null && Models.S_DONE.equals(status)) {
             db.logUsage(reply.model == null ? "" : reply.model, reply.usage);
         }
@@ -1066,6 +1074,10 @@ public class MainActivity extends Activity implements
         req.effort = req.thinking && provider != null && provider.official()
                 ? effortFor(prefs.thinkingLevel()) : null;
         req.search = prefs.search() && provider != null && provider.official();
+        // 思考或联网开启时，采样参数由服务端接管，不再下发
+        boolean samplingAllowed = !req.thinking && !req.search;
+        req.temperature = samplingAllowed ? prefs.temperature() : 0f;
+        req.maxTokens = samplingAllowed ? prefs.maxTokens() : 0;
         req.vision = info == null || info.vision;
         req.withTitle = withTitle && provider != null && provider.official();
 

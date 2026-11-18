@@ -10,6 +10,10 @@ public final class ChatRequest {
     public String system = "";
     public final List<Turn> turns = new ArrayList<>();
     public boolean thinking;
+    /** 采样温度（0 表示不下发；思考/联网开启时服务端接管） */
+    public float temperature;
+    /** 单步最大输出 token（0 表示不下发） */
+    public int maxTokens;
     /** 思考强度：low / high / max（null 或空表示不下发） */
     public String effort;
     /** 是否声明服务端联网搜索工具（仅 DeepSeek 官方支持） */

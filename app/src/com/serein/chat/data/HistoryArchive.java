@@ -37,6 +37,10 @@ import java.util.zip.ZipOutputStream;
 public final class HistoryArchive {
 
     public static final int FORMAT_VERSION = 3;
+    /** 归档防护上限：条目数、单条大小、总解压大小 */
+    private static final int MAX_ENTRIES = 20000;
+    private static final long MAX_ENTRY_BYTES = 64L * 1024 * 1024;
+    private static final long MAX_TOTAL_BYTES = 256L * 1024 * 1024;
 
     private HistoryArchive() {
     }
@@ -202,7 +206,13 @@ public final class HistoryArchive {
         try {
             ZipInputStream zip = new ZipInputStream(in, StandardCharsets.UTF_8);
             ZipEntry e;
+            int entryCount = 0;
+            long totalBytes = 0;
             while ((e = zip.getNextEntry()) != null) {
+                if (++entryCount > MAX_ENTRIES) {
+                    r.error = "归档条目过多（上限 " + MAX_ENTRIES + "），已拒绝导入";
+                    return r;
+                }
                 if (e.isDirectory()) {
                     zip.closeEntry();
                     continue;
@@ -215,7 +225,14 @@ public final class HistoryArchive {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 byte[] buf = new byte[8192];
                 int n;
-                while ((n = zip.read(buf)) > 0) bos.write(buf, 0, n);
+                while ((n = zip.read(buf)) > 0) {
+                    bos.write(buf, 0, n);
+                    totalBytes += n;
+                    if (bos.size() > MAX_ENTRY_BYTES || totalBytes > MAX_TOTAL_BYTES) {
+                        r.error = "归档解压后体积超限（单条 64MB / 合计 256MB），已拒绝导入";
+                        return r;
+                    }
+                }
                 zip.closeEntry();
                 files.put(name, new String(bos.toByteArray(), StandardCharsets.UTF_8));
             }

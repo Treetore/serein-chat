@@ -94,6 +94,101 @@ public final class SettingsPanels {
         closeRef[0] = Sheets.showBottom(root, t, card, null);
     }
 
+    /** 高级参数：采样温度与单步最大输出（思考/联网开启时由服务端接管，面板置灰）。 */
+    public static void advanced(Activity a, Theme t, FrameLayout root, Prefs prefs,
+                                boolean locked, Runnable onChanged) {
+        Context c = a;
+        LinearLayout card = Sheets.sheetCard(c, t);
+        LinearLayout body = new LinearLayout(c);
+        body.setOrientation(LinearLayout.VERTICAL);
+
+        if (locked) {
+            TextView warn = Ui.text(c, c.getString(R.string.advanced_locked), 12, t.error);
+            warn.setPadding(Ui.dp(18), Ui.dp(6), Ui.dp(18), Ui.dp(10));
+            warn.setLineSpacing(Ui.dp(3), 1f);
+            body.addView(warn);
+        }
+
+        body.addView(Sheets.sectionTitle(c, t, c.getString(R.string.advanced_temperature)));
+        TextView tempValue = Ui.text(c, "", 13, t.labelSecondary);
+        tempValue.setPadding(Ui.dp(18), 0, Ui.dp(18), Ui.dp(2));
+        body.addView(tempValue);
+        SeekBar temp = new SeekBar(c);
+        temp.setMax(20);
+        temp.setProgress(Math.round(prefs.temperature() * 10));
+        temp.setEnabled(!locked);
+        temp.setAlpha(locked ? 0.45f : 1f);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.leftMargin = Ui.dp(18);
+        tlp.rightMargin = Ui.dp(18);
+        temp.setLayoutParams(tlp);
+
+        Runnable syncTemp = () -> tempValue.setText(prefs.temperature() <= 0f
+                ? c.getString(R.string.param_default)
+                : String.format(Locale.US, "%.1f", prefs.temperature()));
+        syncTemp.run();
+        temp.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (!fromUser) return;
+                prefs.setTemperature(progress / 10f);
+                syncTemp.run();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                onChanged.run();
+            }
+        });
+        body.addView(temp);
+        TextView tempDesc = Ui.text(c, c.getString(R.string.advanced_temperature_desc), 11, t.labelCaption);
+        tempDesc.setPadding(Ui.dp(18), Ui.dp(2), Ui.dp(18), Ui.dp(12));
+        body.addView(tempDesc);
+
+        body.addView(Sheets.sectionTitle(c, t, c.getString(R.string.advanced_max_tokens)));
+        LinearLayout chips = Ui.row(c);
+        chips.setPadding(Ui.dp(18), 0, Ui.dp(18), Ui.dp(6));
+        int[] values = {0, 512, 1024, 2048, 4096};
+        for (int v : values) {
+            String label = v == 0 ? c.getString(R.string.param_default) : String.valueOf(v);
+            TextView chip = Sheets.themeChip(c, t, label, prefs.maxTokens() == v);
+            chip.setAlpha(locked ? 0.45f : 1f);
+            chip.setEnabled(!locked);
+            chip.setOnClickListener(view -> {
+                prefs.setMaxTokens(v);
+                onChanged.run();
+                for (int i = 0; i < chips.getChildCount(); i++) {
+                    Sheets.styleChip((TextView) chips.getChildAt(i), i == indexOf(values, v), t);
+                }
+            });
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            clp.rightMargin = Ui.dp(8);
+            chips.addView(chip, clp);
+        }
+        body.addView(chips);
+        TextView maxDesc = Ui.text(c, c.getString(R.string.advanced_max_tokens_desc), 11, t.labelCaption);
+        maxDesc.setPadding(Ui.dp(18), Ui.dp(2), Ui.dp(18), Ui.dp(14));
+        body.addView(maxDesc);
+
+        Runnable[] closeRef = new Runnable[1];
+        Sheets.header(c, t, card, c.getString(R.string.advanced_params), () -> {
+            if (closeRef[0] != null) closeRef[0].run();
+        });
+        card.addView(body);
+        closeRef[0] = Sheets.showBottom(root, t, card, null);
+    }
+
+    private static int indexOf(int[] arr, int v) {
+        for (int i = 0; i < arr.length; i++) if (arr[i] == v) return i;
+        return 0;
+    }
+
     /** 编辑所在地（latest_reminder 的第 3 段，可留空）。 */
     public static void editLocation(Activity a, Theme t, Prefs prefs, Runnable changed) {
         Context c = a;

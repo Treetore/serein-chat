@@ -211,13 +211,18 @@ public final class Sheets {
 
         // --- 高级参数（P0-4：被服务端接管的参数说明） ---
         body.addView(sectionTitle(c, t, c.getString(R.string.advanced_params)));
-        body.addView(valueRow(c, t, c.getString(R.string.advanced_params), v -> {
-            new AlertDialog.Builder(c)
-                    .setTitle(R.string.advanced_params)
-                    .setMessage(R.string.advanced_params_body)
-                    .setPositiveButton(R.string.confirm, null)
-                    .show();
-        }));
+        boolean paramLocked = prefs.thinking() || prefs.search();
+        String tempText = prefs.temperature() <= 0f
+                ? c.getString(R.string.param_default)
+                : String.format(java.util.Locale.US, "%.1f", prefs.temperature());
+        String maxText = prefs.maxTokens() <= 0
+                ? c.getString(R.string.param_default) : String.valueOf(prefs.maxTokens());
+        body.addView(valueRow(c, t,
+                (paramLocked ? c.getString(R.string.advanced_locked_short) : "")
+                        + c.getString(R.string.advanced_temperature) + " " + tempText
+                        + " · " + c.getString(R.string.advanced_max_tokens) + " " + maxText,
+                v -> SettingsPanels.advanced(act, t, root, prefs, paramLocked, () -> {
+                })));
 
         // --- 外观 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.appearance)));
@@ -387,6 +392,15 @@ public final class Sheets {
                 ? Ui.roundStroke(t.ghostActiveFill, t.ghostActiveBorder, 1, 16)
                 : Ui.roundStroke(0x00000000, t.borderL2, 1, 16));
         return tv;
+    }
+
+    /** 单个胶囊的选中样式（供动态列表复用）。 */
+    static void styleChip(TextView chip, boolean selected, Theme t) {
+        if (chip == null) return;
+        chip.setTextColor(selected ? t.brandText : t.labelPrimary);
+        chip.setBackground(selected
+                ? Ui.roundStroke(t.ghostActiveFill, t.ghostActiveBorder, 1, 16)
+                : Ui.roundStroke(0x00000000, t.borderL2, 1, 16));
     }
 
     /** 两个胶囊互斥选中态。 */

@@ -192,4 +192,14 @@
     <string name="voice_permission_denied">Microphone permission is required for voice input</string>
     <string name="settings_github">GitHub project</string>
     <string name="github_subtitle">Source code, issues and release notes</string>
+    <string name="usage_cache">cache %1$d%%</string>
+    <string name="usage_hit">hit %1$s</string>
+    <string name="usage_ft">first %1$s</string>
+    <string name="advanced_locked">Thinking or web tools are on: sampling is decided by the server, so these settings are inactive</string>
+    <string name="advanced_temperature">Temperature</string>
+    <string name="advanced_temperature_desc">Lower is more deterministic; server default when unset</string>
+    <string name="advanced_max_tokens">Max output per step</string>
+    <string name="advanced_max_tokens_desc">Limits output of a single reasoning step, not the whole turn</string>
+    <string name="param_default">Default</string>
+    <string name="advanced_locked_short">Locked · </string>
 </resources>

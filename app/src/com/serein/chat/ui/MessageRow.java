@@ -527,15 +527,20 @@ public final class MessageRow extends LinearLayout {
 
     /** 底部用量条：↑输入 ↓输出 · 速度 · 缓存命中率。 */
     private View usageLine(com.serein.chat.data.Usage u) {
-        String line = u.cacheHit > 0
-                ? getContext().getString(R.string.usage_line_cached,
-                        compact(u.inputTokens), compact(u.outputTokens),
-                        String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()),
-                        Math.round(u.cacheRate()), compact(u.cacheHit))
-                : getContext().getString(R.string.usage_line,
-                        compact(u.inputTokens), compact(u.outputTokens),
-                        String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()),
-                        Math.round(u.cacheRate()));
+        Context ctx = getContext();
+        StringBuilder sb = new StringBuilder();
+        sb.append("↑").append(compact(u.inputTokens))
+          .append(" ↓").append(compact(u.outputTokens))
+          .append(" · ").append(String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()))
+          .append(" tok/s · ").append(ctx.getString(R.string.usage_cache, Math.round(u.cacheRate())));
+        if (u.cacheHit > 0) {
+            sb.append("（").append(ctx.getString(R.string.usage_hit, compact(u.cacheHit))).append("）");
+        }
+        if (u.firstTokenMs > 0) {
+            sb.append(" · ").append(ctx.getString(R.string.usage_ft,
+                    String.format(java.util.Locale.US, "%.1fs", u.firstTokenMs / 1000.0)));
+        }
+        String line = sb.toString();
         TextView tv = Ui.text(getContext(), line, 11, t.labelCaption);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);

@@ -29,6 +29,8 @@ public final class Prefs {
     private static final String K_THINKING_LEVEL = "thinking-level";
     private static final String K_LOCATION = "user-location";
     private static final String K_TTS_VOICE = "tts-voice";
+    private static final String K_TEMPERATURE = "temperature";
+    private static final String K_MAX_TOKENS = "max-tokens";
 
     public static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
 
@@ -216,6 +218,24 @@ public final class Prefs {
 
     public void setBackgroundDim(int v) {
         sp.edit().putInt(K_BG_DIM, Math.max(0, Math.min(80, v))).apply();
+    }
+
+    /** 采样温度；0 表示不发送（用服务端默认）。 */
+    public float temperature() {
+        return sp.getFloat(K_TEMPERATURE, 0f);
+    }
+
+    public void setTemperature(float v) {
+        sp.edit().putFloat(K_TEMPERATURE, Math.max(0f, Math.min(2f, v))).apply();
+    }
+
+    /** 单步最大输出 token；0 表示不发送。 */
+    public int maxTokens() {
+        return sp.getInt(K_MAX_TOKENS, 0);
+    }
+
+    public void setMaxTokens(int v) {
+        sp.edit().putInt(K_MAX_TOKENS, Math.max(0, v)).apply();
     }
 
     /** 朗读音色：stella（海星，女声）/ tide（暗潮，男声）。 */

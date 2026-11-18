@@ -96,7 +96,9 @@ public final class Api {
         if (req.thinking && req.effort != null && !req.effort.isEmpty()) {
             body.put("output_config", new JSONObject().put("effort", req.effort));
         }
-        if (!p.official()) body.put("max_tokens", MAX_TOKENS);
+        if (req.temperature > 0) body.put("temperature", req.temperature);
+        if (req.maxTokens > 0) body.put("max_tokens", req.maxTokens);
+        else if (!p.official()) body.put("max_tokens", MAX_TOKENS);
 
         if (p.official()) {
             JSONArray tools = new JSONArray();
@@ -243,6 +245,8 @@ public final class Api {
         body.put("model", req.model);
         body.put("stream", true);
         body.put("stream_options", new JSONObject().put("include_usage", true));
+        if (req.temperature > 0) body.put("temperature", req.temperature);
+        if (req.maxTokens > 0) body.put("max_tokens", req.maxTokens);
         if (p.official()) {
             // 思考开关与强度（官方兼容层字段，三方服务不猜测）
             body.put("thinking", new JSONObject().put("type", req.thinking ? "enabled" : "disabled"));

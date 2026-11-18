@@ -1,0 +1,64 @@
+name: release
+
+# 打 tag（v*）时自动构建 APK 并附加到对应 Release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '已有 tag（例如 v1.60）'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install build-tools and platform
+        shell: pwsh
+        run: |
+          $sdk = $env:ANDROID_SDK_ROOT
+          Write-Host "SDK=$sdk"
+          sdkmanager "platforms;android-35" "build-tools;36.1.0" "platform-tools"
+          $env:BUILD_TOOLS_VERSION = "36.1.0"
+          echo "BUILD_TOOLS_VERSION=36.1.0" >> $env:GITHUB_ENV
+
+      - name: Build APK
+        shell: powershell
+        run: |
+          .\build.ps1 -Task apk
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Locate artifact
+        id: artifact
+        shell: pwsh
+        run: |
+          $apk = Get-ChildItem out/*.apk | Select-Object -First 1
+          if (-not $apk) { throw "no apk produced" }
+          "path=$($apk.FullName)" >> $env:GITHUB_OUTPUT
+          "name=$($apk.Name)" >> $env:GITHUB_OUTPUT
+          $hash = (Get-FileHash $apk.FullName -Algorithm SHA256).Hash.ToLower()
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "APK=$($apk.Name) sha256=$hash"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ steps.artifact.outputs.path }}
+          fail_on_unmatched_files: true
