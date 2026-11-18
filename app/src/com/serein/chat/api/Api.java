@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -866,6 +867,101 @@ public final class Api {
     }
 
     /** 上传附件（仅 Anthropic 兼容端点提供 Files API）。 */
+    // ------------------------------------------------------------------ 语音工具（官方 /v1/tools）
+
+    /** 整段语音合成：把文字转成 wav 写入 outFile；失败返回 null。 */
+    public static String tts(Provider p, String text, String voiceId, File outFile,
+                             AtomicBoolean cancelled) {
+        if (text == null || text.trim().isEmpty()) return "empty";
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(trimSlash(p.baseUrl) + "/v1/tools/tts").openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(120000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + p.apiKey);
+            conn.setRequestProperty("Accept", "audio/wav");
+            conn.setRequestProperty("User-Agent", UA);
+            JSONObject body = new JSONObject();
+            body.put("text", text);
+            body.put("voice_id", voiceId == null || voiceId.isEmpty() ? "stella" : voiceId);
+            body.put("format", "wav");
+            body.put("filter_markdown", true);
+            OutputStream os = conn.getOutputStream();
+            os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+            os.close();
+            int code = conn.getResponseCode();
+            if (code >= 400) {
+                return "HTTP " + code + " " + readAll(conn.getErrorStream());
+            }
+            InputStream in = conn.getInputStream();
+            FileOutputStream fos = new FileOutputStream(outFile);
+            byte[] buf = new byte[8192];
+            int n;
+            long total = 0;
+            while ((n = in.read(buf)) > 0) {
+                if (cancelled != null && cancelled.get()) {
+                    in.close();
+                    fos.close();
+                    return "cancelled";
+                }
+                fos.write(buf, 0, n);
+                total += n;
+            }
+            in.close();
+            fos.close();
+            return total > 64 ? null : "empty audio";
+        } catch (Exception e) {
+            return String.valueOf(e.getMessage());
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    /** 语音识别：上传 16 位 PCM WAV，返回转写文本；失败返回 null 并写 err。 */
+    public static String asr(Provider p, File wav, String[] err) {
+        String boundary = "----SereinAsr" + System.currentTimeMillis();
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(trimSlash(p.baseUrl) + "/v1/tools/asr").openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(180000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            conn.setRequestProperty("Authorization", "Bearer " + p.apiKey);
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("User-Agent", UA);
+            OutputStream os = conn.getOutputStream();
+            os.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.write(("Content-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\n")
+                    .getBytes(StandardCharsets.UTF_8));
+            os.write("Content-Type: audio/wav\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            FileInputStream fis = new FileInputStream(wav);
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = fis.read(buf)) > 0) os.write(buf, 0, n);
+            fis.close();
+            os.write("\r\n".getBytes(StandardCharsets.UTF_8));
+            os.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            os.close();
+            int code = conn.getResponseCode();
+            if (code >= 400) {
+                if (err != null && err.length > 0) err[0] = "HTTP " + code + " " + readAll(conn.getErrorStream());
+                return null;
+            }
+            JSONObject o = new JSONObject(readAll(decoded(conn)));
+            return str(o, "text");
+        } catch (Exception e) {
+            if (err != null && err.length > 0) err[0] = String.valueOf(e.getMessage());
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
     public static final String PURPOSE_TEXT = "text_recognition";
     public static final String PURPOSE_LAYOUT = "rich_layout_recognition";
     public static final String PURPOSE_USER_DATA = "user_data";

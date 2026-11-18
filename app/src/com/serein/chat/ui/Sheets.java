@@ -185,6 +185,28 @@ public final class Sheets {
                     SettingsPanels.editLocation(act, t, prefs, () -> host.onProviderChanged());
                 }));
 
+        // --- 朗读音色 ---
+        body.addView(sectionTitle(c, t, c.getString(R.string.tts_voice)));
+        String voice = prefs.ttsVoice();
+        body.addView(valueRow(c, t,
+                "tide".equals(voice) ? c.getString(R.string.tts_voice_tide)
+                        : c.getString(R.string.tts_voice_stella),
+                v -> {
+                    prefs.setTtsVoice("tide".equals(prefs.ttsVoice()) ? "stella" : "tide");
+                    host.onProviderChanged();
+                    close.run();
+                }));
+
+        // --- 高级参数（P0-4：被服务端接管的参数说明） ---
+        body.addView(sectionTitle(c, t, c.getString(R.string.advanced_params)));
+        body.addView(valueRow(c, t, c.getString(R.string.advanced_params), v -> {
+            new AlertDialog.Builder(c)
+                    .setTitle(R.string.advanced_params)
+                    .setMessage(R.string.advanced_params_body)
+                    .setPositiveButton(R.string.confirm, null)
+                    .show();
+        }));
+
         // --- 外观 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.appearance)));
         body.addView(valueRow(c, t,
@@ -240,6 +262,10 @@ public final class Sheets {
 
         // --- 关于 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.about)));
+        body.addView(iconRow(c, t, R.drawable.ic_github,
+                c.getString(R.string.settings_github),
+                c.getString(R.string.github_subtitle),
+                v -> openUrl(c, "https://github.com/Treetore/serein-chat")));
         TextView about = Ui.text(c, c.getString(R.string.about_body,
                 trimHost(active.baseUrl) + endpointHint(active)), 13, t.labelTertiary);
         about.setLineSpacing(Ui.dp(4), 1f);
@@ -256,6 +282,27 @@ public final class Sheets {
         header(c, t, card, c.getString(R.string.settings), close);
         card.addView(sv);
         closeRef[0] = showBottom(root, t, card, host::onClose);
+    }
+
+    /** 带图标的可点行（GitHub 等项目链接）。 */
+    static View iconRow(Context c, Theme t, int icon, String title, String subtitle,
+                        View.OnClickListener l) {
+        LinearLayout row = Ui.row(c);
+        row.setPadding(Ui.dp(18), Ui.dp(10), Ui.dp(18), Ui.dp(10));
+        Ui.pressable(row, Ui.round(0x00000000, 10), 10, t.hoverAccent);
+        row.addView(Ui.icon(c, icon, t.labelSecondary, 20));
+        LinearLayout col = new LinearLayout(c);
+        col.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        clp.leftMargin = Ui.dp(12);
+        col.setLayoutParams(clp);
+        col.addView(Ui.text(c, title, 14, t.labelPrimary));
+        col.addView(Ui.text(c, subtitle, 11, t.labelTertiary));
+        row.addView(col);
+        row.addView(Ui.icon(c, R.drawable.ic_expand_more, t.labelCaption, 16));
+        row.setOnClickListener(l);
+        return row;
     }
 
     private static View valueRow(Context c, Theme t, String value, View.OnClickListener l) {

@@ -68,6 +68,7 @@ public class MainActivity extends Activity implements
     private static final int REQ_FILES = 1002;
     public static final int REQ_BG = 1003;
     private static final int REQ_EXPORT = 1004;
+    private static final int REQ_MIC = 1006;
     private static final int REQ_IMPORT = 1005;
     private static final int MAX_FILES = 4;
 
@@ -122,6 +123,8 @@ public class MainActivity extends Activity implements
     private boolean streamPosted;
 
     private TextToSpeech tts;
+    private android.media.MediaPlayer player;
+    private final com.serein.chat.data.WavRecorder recorder = new com.serein.chat.data.WavRecorder();
     private boolean ttsReady;
 
     private boolean drawerOpen;
@@ -1164,14 +1167,59 @@ public class MainActivity extends Activity implements
 
     @Override
     public void onSpeak(Models.Message m) {
+        final String text = m.plainText();
+        if (text.trim().isEmpty()) return;
+        if (provider == null) provider = prefs.activeProvider();
+        final Provider target = provider;
+        boolean canApi = target != null && target.official()
+                && target.apiKey != null && !target.apiKey.trim().isEmpty();
+        if (!canApi) {
+            speakLocally(text, null);
+            return;
+        }
+        io.execute(() -> {
+            File out = new File(getCacheDir(), "tts-" + System.currentTimeMillis() + ".wav");
+            String err = Api.tts(target, text, prefs.ttsVoice(), out, null);
+            main.post(() -> {
+                if (err == null) playWav(out);
+                else speakLocally(text, err);
+            });
+        });
+    }
+
+    /** 播放接口返回的 wav；占位实现见 playWav(File)。 */
+    private void playWav(File f) {
+        try {
+            if (player != null) {
+                player.release();
+                player = null;
+            }
+            player = new android.media.MediaPlayer();
+            player.setDataSource(f.getAbsolutePath());
+            player.setOnCompletionListener(mp -> {
+                try { mp.release(); } catch (Exception ignored) {}
+                if (player == mp) player = null;
+            });
+            player.prepare();
+            player.start();
+            Ui.toast(this, getString(R.string.tts_play));
+        } catch (Exception e) {
+            speakLocally("", e.getMessage());
+        }
+    }
+
+    /** 系统 TTS 兜底（三方服务商或接口失败时）。 */
+    private void speakLocally(String text, String why) {
         if (tts == null || !ttsReady) {
             Ui.toast(this, getString(R.string.tts_unavailable));
             return;
         }
-        String text = m.plainText();
-        if (text.trim().isEmpty()) return;
+        if (text == null || text.trim().isEmpty()) {
+            Ui.toast(this, why == null ? getString(R.string.tts_unavailable) : why);
+            return;
+        }
         tts.stop();
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply-" + m.id);
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply");
         Ui.toast(this, getString(R.string.tts_play));
     }
 
@@ -1337,6 +1385,52 @@ public class MainActivity extends Activity implements
 
     @Override
     public void onVoice() {
+        if (provider == null) provider = prefs.activeProvider();
+        final Provider target = provider;
+        boolean canApi = target != null && target.official()
+                && target.apiKey != null && !target.apiKey.trim().isEmpty();
+        if (!canApi) {
+            startSystemRecognizer();
+            return;
+        }
+        if (!recorder.isRecording()
+                && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+            return;
+        }
+        if (recorder.isRecording()) {
+            File wav = recorder.stop();
+            inputBar.setRecording(false);
+            if (wav == null) {
+                Ui.toast(this, getString(R.string.voice_too_short));
+                return;
+            }
+            Ui.toast(this, getString(R.string.voice_recognizing));
+            io.execute(() -> {
+                String[] err = new String[1];
+                String text = Api.asr(target, wav, err);
+                main.post(() -> {
+                    if (text != null && !text.trim().isEmpty()) {
+                        inputBar.setText(text.trim());
+                    } else {
+                        Ui.toast(MainActivity.this, getString(R.string.voice_failed,
+                                err[0] == null ? "" : err[0]));
+                    }
+                });
+            });
+            return;
+        }
+        File out = new File(getCacheDir(), "asr-" + System.currentTimeMillis() + ".wav");
+        if (!recorder.start(out)) {
+            Ui.toast(this, getString(R.string.voice_unavailable));
+            return;
+        }
+        inputBar.setRecording(true);
+        Ui.toast(this, getString(R.string.voice_recording));
+    }
+
+    private void startSystemRecognizer() {
         Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
@@ -1345,6 +1439,20 @@ public class MainActivity extends Activity implements
             startActivityForResult(i, REQ_VOICE);
         } catch (Exception e) {
             Ui.toast(this, getString(R.string.voice_unavailable));
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == REQ_MIC) {
+            boolean granted = results.length > 0
+                    && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+            if (granted) {
+                onVoice();
+            } else {
+                Ui.toast(this, getString(R.string.voice_permission_denied));
+            }
         }
     }
 

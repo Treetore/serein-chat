@@ -112,7 +112,7 @@
     <string name="tts_unavailable">朗读不可用</string>
     <string name="open_link_failed">无法打开链接</string>
     <string name="citations_count">引用 %1$d 处来源</string>
-    <string name="about_body">Serein Chat 1.40\n接口：%1$s\n第三方开源客户端，与任何模型厂商无从属关系。API Key 使用系统 Keystore 加密后仅存本机，不随备份或导出离开设备。</string>
+    <string name="about_body">Serein Chat 1.50\n接口：%1$s\n第三方开源客户端，与任何模型厂商无从属关系。API Key 使用系统 Keystore 加密后仅存本机，不随备份或导出离开设备。</string>
     <string name="err_protocol">响应格式异常，请稍后重试</string>
     <string name="err_interrupted">连接中断，请重试</string>
     <string name="usage_line">↑%1$s ↓%2$s · %3$s tok/s · 缓存 %4$d%%</string>
@@ -178,4 +178,18 @@
     <string name="location_unset">未设置</string>
     <string name="location_hint">例如：新加坡 / 上海（可留空）</string>
     <string name="cap_reminder_note">每轮会附带日期、星期、地区与语言，便于模型判断时效</string>
+    <string name="voice_recording">正在录音，再次点击麦克风结束</string>
+    <string name="voice_recognizing">正在识别…</string>
+    <string name="voice_failed">识别失败：%1$s</string>
+    <string name="voice_too_short">录音太短，请重试</string>
+    <string name="tts_voice">朗读音色</string>
+    <string name="tts_voice_stella">海星（女声）</string>
+    <string name="tts_voice_tide">暗潮（男声）</string>
+    <string name="advanced_params">高级参数</string>
+    <string name="advanced_params_body">开启思考或联网时，temperature、top_p、stop_sequences 等采样参数由服务端接管，客户端不下发。max_tokens 限制的是单步推理的输出长度，不是整轮总量。</string>
+    <string name="usage_line_cached">↑%1$s ↓%2$s · %3$s tok/s · 缓存 %4$d%%（命中 %5$s）</string>
+    <string name="usage_total">累计：%1$d 次请求 · 命中 %2$s tokens · ↑%3$s ↓%4$s</string>
+    <string name="voice_permission_denied">需要麦克风权限才能语音输入</string>
+    <string name="settings_github">GitHub 项目主页</string>
+    <string name="github_subtitle">查看源码、反馈问题与更新日志</string>
 </resources>

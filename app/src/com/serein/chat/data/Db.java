@@ -67,6 +67,21 @@ public final class Db extends SQLiteOpenHelper {
         getWritableDatabase().insert("usage_log", null, v);
     }
 
+    /** 累计缓存命中 token 数与请求数。 */
+    public long[] usageTotals() {
+        android.database.Cursor c = getReadableDatabase().rawQuery(
+                "SELECT COUNT(*), IFNULL(SUM(hit),0), IFNULL(SUM(in_tok),0), IFNULL(SUM(out_tok),0)"
+                        + " FROM usage_log", null);
+        try {
+            if (c.moveToFirst()) {
+                return new long[]{c.getLong(0), c.getLong(1), c.getLong(2), c.getLong(3)};
+            }
+        } finally {
+            c.close();
+        }
+        return new long[]{0, 0, 0, 0};
+    }
+
     /** 最近 N 天按天聚合：{day, calls, in, out, hit, miss}。 */
     public java.util.List<long[]> recentUsage(int days) {
         java.util.List<long[]> out = new java.util.ArrayList<>();

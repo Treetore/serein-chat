@@ -527,10 +527,15 @@ public final class MessageRow extends LinearLayout {
 
     /** 底部用量条：↑输入 ↓输出 · 速度 · 缓存命中率。 */
     private View usageLine(com.serein.chat.data.Usage u) {
-        String line = getContext().getString(R.string.usage_line,
-                compact(u.inputTokens), compact(u.outputTokens),
-                String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()),
-                Math.round(u.cacheRate()));
+        String line = u.cacheHit > 0
+                ? getContext().getString(R.string.usage_line_cached,
+                        compact(u.inputTokens), compact(u.outputTokens),
+                        String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()),
+                        Math.round(u.cacheRate()), compact(u.cacheHit))
+                : getContext().getString(R.string.usage_line,
+                        compact(u.inputTokens), compact(u.outputTokens),
+                        String.format(java.util.Locale.US, "%.1f", u.tokensPerSecond()),
+                        Math.round(u.cacheRate()));
         TextView tv = Ui.text(getContext(), line, 11, t.labelCaption);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);

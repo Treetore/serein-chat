@@ -40,6 +40,7 @@ public final class InputBar extends LinearLayout {
     }
 
     private final Theme t;
+    private ImageView voiceButton;
     private final Host host;
     private final EditText input;
     private final LinearLayout attachments;
@@ -172,10 +173,10 @@ public final class InputBar extends LinearLayout {
         lbLp.rightMargin = Ui.dp(4);
         functionRow.addView(levelBadge, lbLp);
 
-        ImageView mic = Ui.iconButton(c, R.drawable.ic_mic, t.labelSecondary, t);
-        mic.setContentDescription(c.getString(R.string.voice_input));
-        mic.setOnClickListener(v -> host.onVoice());
-        functionRow.addView(mic);
+        voiceButton = Ui.iconButton(c, R.drawable.ic_mic, t.labelSecondary, t);
+        voiceButton.setContentDescription(c.getString(R.string.voice_input));
+        voiceButton.setOnClickListener(v -> host.onVoice());
+        functionRow.addView(voiceButton);
 
         sendButton = new ImageView(c);
         int size = Ui.dp(34);
@@ -289,6 +290,18 @@ public final class InputBar extends LinearLayout {
 
     public void setEnabledInput(boolean enabled) {
         input.setEnabled(enabled);
+    }
+
+    /** 外部写入文本（语音识别结果等），光标置尾。 */
+    public void setText(String value) {
+        input.setText(value == null ? "" : value);
+        input.setSelection(input.getText().length());
+    }
+
+    /** 录音态：麦克风按钮高亮 + 提示文案。 */
+    public void setRecording(boolean on) {
+        if (voiceButton == null) return;
+        voiceButton.setColorFilter(on ? t.brand : t.labelSecondary);
     }
 
     public String text() {

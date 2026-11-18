@@ -28,6 +28,7 @@ public final class Prefs {
     private static final String K_BG_DIM = "bg-dim";
     private static final String K_THINKING_LEVEL = "thinking-level";
     private static final String K_LOCATION = "user-location";
+    private static final String K_TTS_VOICE = "tts-voice";
 
     public static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
 
@@ -215,6 +216,15 @@ public final class Prefs {
 
     public void setBackgroundDim(int v) {
         sp.edit().putInt(K_BG_DIM, Math.max(0, Math.min(80, v))).apply();
+    }
+
+    /** 朗读音色：stella（海星，女声）/ tide（暗潮，男声）。 */
+    public String ttsVoice() {
+        return sp.getString(K_TTS_VOICE, "stella");
+    }
+
+    public void setTtsVoice(String v) {
+        sp.edit().putString(K_TTS_VOICE, v == null || v.isEmpty() ? "stella" : v).apply();
     }
 
     /** 用户所在地（用于 latest_reminder，可为空）。 */

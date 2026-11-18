@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://qm.qq.com/q/Ww5b5dF5mO"><img alt="QQ 群" src="https://img.shields.io/badge/QQ%20%E7%BE%A4-%E5%8A%A0%E5%85%A5-3964FE"></a>
   <!-- 访问量小插件：无需自建服务，页面加载即计数 -->
   <a href="https://github.com/Treetore/serein-chat"><img alt="visitors" src="https://api.visitorbadge.io/api/visitors?path=Treetore%2Fserein-chat&label=%E8%AE%BF%E9%97%AE%E9%87%8F&countColor=%233964FE"></a>
   <!-- 备用计数器（如上方失效可换用）
@@ -118,6 +119,14 @@ app/
 build.ps1                    无 Gradle 构建流水线
 docs/                        截图、安全审查记录
 ```
+
+## 社群
+
+- **QQ 群**：[点击加入](https://qm.qq.com/q/Ww5b5dF5mO) —— 使用交流、问题反馈、版本预告
+- **Issues**：[提交问题或建议](https://github.com/Treetore/serein-chat/issues)
+- **Releases**：[下载最新版本](https://github.com/Treetore/serein-chat/releases)
+
+群内不解答与具体服务商账号、密钥相关的问题；涉及密钥的请先确认已自行脱敏。
 
 ## 更新日志
 

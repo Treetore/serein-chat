@@ -578,6 +578,16 @@ public final class SettingsPanels {
         detail.setLineSpacing(Ui.dp(3), 1f);
         body.addView(detail);
 
+        // 累计用量（P2-3：缓存节省可视化）
+        long[] totals = db.usageTotals();
+        if (totals[0] > 0) {
+            TextView sum = Ui.text(c, c.getString(R.string.usage_total,
+                    (int) totals[0], compact(totals[1]), compact(totals[2]), compact(totals[3])),
+                    12, t.labelSecondary);
+            sum.setPadding(Ui.dp(20), Ui.dp(2), Ui.dp(20), Ui.dp(10));
+            body.addView(sum);
+        }
+
         // 官方平台快捷入口：充值 / 用量
         LinearLayout links = Ui.row(c);
         links.setPadding(Ui.dp(20), 0, Ui.dp(20), Ui.dp(12));

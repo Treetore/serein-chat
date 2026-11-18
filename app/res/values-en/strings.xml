@@ -178,4 +178,18 @@
     <string name="location_unset">Not set</string>
     <string name="location_hint">e.g. Singapore (optional)</string>
     <string name="cap_reminder_note">Each turn also sends date, weekday, location and language so the model knows the current context</string>
+    <string name="voice_recording">Recording… tap mic again to stop</string>
+    <string name="voice_recognizing">Transcribing…</string>
+    <string name="voice_failed">Transcription failed: %1$s</string>
+    <string name="voice_too_short">Recording too short</string>
+    <string name="tts_voice">Read-aloud voice</string>
+    <string name="tts_voice_stella">Stella (female)</string>
+    <string name="tts_voice_tide">Tide (male)</string>
+    <string name="advanced_params">Advanced parameters</string>
+    <string name="advanced_params_body">When thinking or web tools are enabled, temperature / top_p / stop_sequences are decided by the server and are not sent by the client. max_tokens limits the output of a single reasoning step, not the whole turn.</string>
+    <string name="usage_line_cached">↑%1$s ↓%2$s · %3$s tok/s · cache %4$d%% (hit %5$s)</string>
+    <string name="usage_total">Total: %1$d calls · hit %2$s tokens · ↑%3$s ↓%4$s</string>
+    <string name="voice_permission_denied">Microphone permission is required for voice input</string>
+    <string name="settings_github">GitHub project</string>
+    <string name="github_subtitle">Source code, issues and release notes</string>
 </resources>
