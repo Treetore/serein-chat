@@ -418,13 +418,21 @@ public final class MessageRow extends LinearLayout {
         Context c = getContext();
         boolean live = Models.S_PENDING.equals(msg.status) || Models.S_STREAMING.equals(msg.status);
         if (b.type == Models.B_TOOL_USE) {
-            if (b.kind.contains("search")) return c.getString(R.string.message_searching);
+            if (b.kind != null && b.kind.contains("deep_search")) {
+                return c.getString(R.string.message_deep_searching);
+            }
+            if (b.kind != null && b.kind.contains("search")) {
+                return c.getString(R.string.message_searching);
+            }
             return c.getString(R.string.message_reading);
         }
         if (b.type == Models.B_SEARCH_RESULT) {
             if (b.failed) return c.getString(R.string.tool_search_fail);
             int n = b.sources.size();
             if (n == 0) return c.getString(R.string.message_search_no_result);
+            if (b.kind != null && b.kind.contains("deep_search")) {
+                return c.getString(R.string.message_deep_search_results, n);
+            }
             return c.getString(R.string.message_search_results, n);
         }
         if (b.type == Models.B_FETCH_RESULT) {

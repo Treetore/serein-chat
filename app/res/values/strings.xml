@@ -112,7 +112,7 @@
     <string name="tts_unavailable">朗读不可用</string>
     <string name="open_link_failed">无法打开链接</string>
     <string name="citations_count">引用 %1$d 处来源</string>
-    <string name="about_body">Serein Chat 1.10\n接口：%1$s\n第三方开源客户端，与任何模型厂商无从属关系。API Key 使用系统 Keystore 加密后仅存本机，不随备份或导出离开设备。</string>
+    <string name="about_body">Serein Chat 1.20\n接口：%1$s\n第三方开源客户端，与任何模型厂商无从属关系。API Key 使用系统 Keystore 加密后仅存本机，不随备份或导出离开设备。</string>
     <string name="err_protocol">响应格式异常，请稍后重试</string>
     <string name="err_interrupted">连接中断，请重试</string>
     <string name="usage_line">↑%1$s ↓%2$s · %3$s tok/s · 缓存 %4$d%%</string>
@@ -172,4 +172,10 @@
     <string name="top_up">前往充值</string>
     <string name="usage_query">用量查询</string>
     <string name="cap_server_params">提示：开启思考或联网时，temperature、top_p 等采样参数由服务端接管，客户端不再下发。</string>
+    <string name="message_deep_searching">深度思考中搜索…</string>
+    <string name="message_deep_search_results">深度搜索 · %1$d 个来源</string>
+    <string name="settings_location">地区</string>
+    <string name="location_unset">未设置</string>
+    <string name="location_hint">例如：新加坡 / 上海（可留空）</string>
+    <string name="cap_reminder_note">每轮会附带日期、星期、地区与语言，便于模型判断时效</string>
 </resources>

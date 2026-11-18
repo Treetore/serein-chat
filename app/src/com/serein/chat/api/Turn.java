@@ -7,6 +7,8 @@ public final class Turn {
 
     public static final String USER = "user";
     public static final String ASSISTANT = "assistant";
+    /** 用户元信息标记：<date>,<weekday>,<location>,<platform>,<language> */
+    public static final String LATEST_REMINDER = "latest_reminder";
 
     public String role;
     public String text = "";

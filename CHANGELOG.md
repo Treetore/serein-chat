@@ -1,5 +1,21 @@
 # 更新日志
 
+## v1.20 — 用户元信息标记与深度搜索展示
+
+### 新增
+- **latest_reminder（用户元信息标记）**：每轮在用户消息前插入
+  `{"role":"latest_reminder","content":"<日期>,<星期>,<地区>,App,<语言>"}`，随历史一并回传；
+  设置新增「地区」项（可留空）
+- 深度思考搜索（`kind: deep_search`）使用独立文案，与普通联网搜索区分
+
+### 验证（模拟器 + 服务端探针）
+- 首轮：`ctx_roles=latest_reminder,user`
+- 次轮：`ctx_roles=latest_reminder,user,assistant,latest_reminder,user`
+- 标记内容示例：`2026-11-18,Wednesday,,App,English`
+
+### 其它
+- 版本号 1.10 → 1.20（versionCode 4）
+
 ## v1.10 — 内容块原样回传
 
 官方要求「客户端只需展示返回的内容块，并在下一轮把它们原样回传」。此前我们把 assistant 轮压缩成纯文本，

@@ -24,7 +24,7 @@
 
 ## P0 · 正确性缺陷（影响答案质量与稳定性，优先做）
 
-### P0-1 思考强度改用 `output_config.effort`
+### P0-1 思考强度改用 `output_config.effort` ✅ 已完成（v1.01）
 
 文档明确：Anthropic 格式的强度控制是 `output_config.effort`（`low/high/max`），
 `thinking.budget_tokens` 在开启工具 / 安全校验 / 标题时**一律被忽略**，本来也不是强度开关。
@@ -36,7 +36,7 @@
 
 **验收**：抓包确认请求体含 `output_config.effort` 且不含 `budget_tokens`；三档切换能在 `usage.output_tokens` 与思考耗时上观察到差异。
 
-### P0-2 assistant 轮按原样回传内容块
+### P0-2 assistant 轮按原样回传内容块 ✅ 已完成（v1.10）
 
 文档要求「客户端只需展示返回的内容块，并在下一轮把它们原样回传」。当前实现把 assistant 轮压成一个 `text` 块，
 丢弃了 `thinking`（含 `signature`）、`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result` 与带
@@ -50,7 +50,7 @@
 
 **验收**：第二轮请求体的 `messages[1].content` 与上一轮响应块逐字段一致；带工具的思考对话不再报错；`cache_read_input_tokens` 明显上升。
 
-### P0-3 拒答（refusal）处理
+### P0-3 拒答（refusal）处理 ✅ 已完成（v1.01）
 
 `stop_reason: "refusal"` 时用本地拒答文案替换已展示的回答，并标记该轮不进入后续上下文。
 
@@ -65,14 +65,14 @@
 
 ## P1 · 官方能力补齐
 
-### P1-1 用户元信息标记 `latest_reminder`
+### P1-1 用户元信息标记 `latest_reminder` ✅ 已完成（v1.20）
 把当前日期、地区、语言告诉模型，提升时效类回答质量。设置新增「地区」项（默认跟随系统语言时区）。
 
 ### P1-2 文件输入：文档解析
 除图片外，支持 PDF / Word / PowerPoint 走 Files API 上传并解析，解析文本拼进上下文；
 附件卡片显示文件名、页数、解析状态。
 
-### P1-3 深度思考搜索的可视化
+### P1-3 深度思考搜索的可视化 ✅ 已完成（v1.20，卡片文案区分）
 区分 `server_tool_use.kind`：普通搜索与 `deep_search` 用不同卡片样式；思考块内联展示搜索步骤。
 
 ### P1-4 引用闭环

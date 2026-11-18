@@ -175,6 +175,16 @@ public final class Sheets {
             SettingsPanels.models(act, t, root, prefs, () -> host.onProviderChanged());
         }));
 
+        // --- 地区（latest_reminder） ---
+        body.addView(sectionTitle(c, t, c.getString(R.string.settings_location)));
+        String loc = prefs.location();
+        body.addView(valueRow(c, t,
+                loc == null || loc.isEmpty() ? c.getString(R.string.location_unset) : loc,
+                v -> {
+                    close.run();
+                    SettingsPanels.editLocation(act, t, prefs, () -> host.onProviderChanged());
+                }));
+
         // --- 外观 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.appearance)));
         body.addView(valueRow(c, t,

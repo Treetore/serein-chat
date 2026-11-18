@@ -27,6 +27,7 @@ public final class Prefs {
     private static final String K_BG_IMAGE = "bg-image";
     private static final String K_BG_DIM = "bg-dim";
     private static final String K_THINKING_LEVEL = "thinking-level";
+    private static final String K_LOCATION = "user-location";
 
     public static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
 
@@ -214,6 +215,15 @@ public final class Prefs {
 
     public void setBackgroundDim(int v) {
         sp.edit().putInt(K_BG_DIM, Math.max(0, Math.min(80, v))).apply();
+    }
+
+    /** 用户所在地（用于 latest_reminder，可为空）。 */
+    public String location() {
+        return sp.getString(K_LOCATION, "");
+    }
+
+    public void setLocation(String v) {
+        sp.edit().putString(K_LOCATION, v == null ? "" : v.trim()).apply();
     }
 
     /** 思考强度：0 低 / 1 中 / 2 高。 */

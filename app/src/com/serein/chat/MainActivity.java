@@ -941,6 +941,23 @@ public class MainActivity extends Activity implements
     }
 
 
+    /** latest_reminder：<date>,<weekday>,<location>,<platform>,<language> */
+    private String buildLatestReminder() {
+        try {
+            boolean zh = getResources().getConfiguration().getLocales().get(0)
+                    .getLanguage().startsWith("zh");
+            java.util.Locale loc = zh ? java.util.Locale.CHINA : java.util.Locale.US;
+            java.util.Date now = new java.util.Date();
+            String date = new java.text.SimpleDateFormat("yyyy-MM-dd", loc).format(now);
+            String weekday = new java.text.SimpleDateFormat("EEEE", loc).format(now);
+            String language = zh ? "中文" : "English";
+            String location = prefs.location();
+            return date + "," + weekday + "," + (location == null ? "" : location) + ",App," + language;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     /** 组合可回传的协议原生负载：Anthropic 用块数组，OpenAI 用消息对象。 */
     private String buildRawPayload(Models.Message reply) {
         try {
@@ -1056,13 +1073,22 @@ public class MainActivity extends Activity implements
             if (Models.S_ERROR.equals(a.status) || a.refused) continue;
             String answer = a.contextText();
             if (answer.trim().isEmpty()) continue;
+            if (u.reminder != null && !u.reminder.isEmpty()) {
+                req.turns.add(new Turn(Turn.LATEST_REMINDER, u.reminder));
+            }
             req.turns.add(userTurn(u));
             Turn at = new Turn(Turn.ASSISTANT, answer);
             if (a.rawJson != null && !a.rawJson.isEmpty()) at.rawJson = a.rawJson;
             req.turns.add(at);
             i++;
         }
-        if (question != null) req.turns.add(userTurn(question));
+        if (question != null) {
+            question.reminder = buildLatestReminder();
+            if (!question.reminder.isEmpty()) {
+                req.turns.add(new Turn(Turn.LATEST_REMINDER, question.reminder));
+            }
+            req.turns.add(userTurn(question));
+        }
         if (prefix != null && !prefix.trim().isEmpty()) {
             req.turns.add(new Turn(Turn.ASSISTANT, prefix));
         }

@@ -172,4 +172,10 @@
     <string name="top_up">Top up</string>
     <string name="usage_query">Usage</string>
     <string name="cap_server_params">Note: with thinking or web tools enabled, sampling parameters such as temperature and top_p are decided by the server.</string>
+    <string name="message_deep_searching">Deep search…</string>
+    <string name="message_deep_search_results">Deep search · %1$d sources</string>
+    <string name="settings_location">Location</string>
+    <string name="location_unset">Not set</string>
+    <string name="location_hint">e.g. Singapore (optional)</string>
+    <string name="cap_reminder_note">Each turn also sends date, weekday, location and language so the model knows the current context</string>
 </resources>

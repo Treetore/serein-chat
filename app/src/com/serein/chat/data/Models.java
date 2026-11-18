@@ -316,6 +316,8 @@ public final class Models {
         public Usage usage;
         /** 发送给模型的答复正文快照：后续轮次复用它，避免前缀漂移导致缓存失效 */
         public String sentText = "";
+        /** 该轮随用户消息发送的 latest_reminder 内容，随历史一并回传 */
+        public String reminder = "";
         /** 协议原生的 assistant 内容（Anthropic: 块数组 JSON；OpenAI: 消息对象 JSON） */
         public String rawJson = "";
 
@@ -383,6 +385,7 @@ public final class Models {
                 if (usage != null) o.put("us", usage.toJson());
                 if (sentText != null && !sentText.isEmpty()) o.put("sn", sentText);
                 if (rawJson != null && !rawJson.isEmpty()) o.put("raw", rawJson);
+                if (reminder != null && !reminder.isEmpty()) o.put("lr", reminder);
                 if (refused) o.put("rf", true);
             } catch (Exception ignored) {
             }
@@ -411,6 +414,7 @@ public final class Models {
             m.usage = Usage.from(o.optJSONObject("us"));
             m.sentText = o.optString("sn");
             m.rawJson = o.optString("raw");
+            m.reminder = o.optString("lr");
             m.refused = o.optBoolean("rf", false);
             return m;
         }

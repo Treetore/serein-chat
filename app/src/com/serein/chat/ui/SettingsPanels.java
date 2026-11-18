@@ -94,6 +94,25 @@ public final class SettingsPanels {
         closeRef[0] = Sheets.showBottom(root, t, card, null);
     }
 
+    /** 编辑所在地（latest_reminder 的第 3 段，可留空）。 */
+    public static void editLocation(Activity a, Theme t, Prefs prefs, Runnable changed) {
+        Context c = a;
+        EditText et = new EditText(c);
+        et.setText(prefs.location());
+        et.setHint(c.getString(R.string.location_hint));
+        et.setSingleLine(true);
+        et.setPadding(Ui.dp(20), Ui.dp(12), Ui.dp(20), Ui.dp(12));
+        new AlertDialog.Builder(c)
+                .setTitle(R.string.settings_location)
+                .setView(et)
+                .setPositiveButton(R.string.save, (d, w) -> {
+                    prefs.setLocation(et.getText().toString());
+                    changed.run();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
     private static void openUrl(Context c, String url) {
         try {
             Intent i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));

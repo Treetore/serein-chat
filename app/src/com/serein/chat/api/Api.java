@@ -442,6 +442,9 @@ public final class Api {
     // ------------------------------------------------------------------ 消息序列化（前缀缓存复用）
 
     private static JSONObject anthropicTurn(Provider p, ChatRequest req, Turn t) throws Exception {
+        if (Turn.LATEST_REMINDER.equals(t.role)) {
+            return new JSONObject().put("role", "latest_reminder").put("content", t.text);
+        }
         if (Turn.ASSISTANT.equals(t.role)) {
             if (t.rawJson != null && !t.rawJson.isEmpty()) {
                 try {
@@ -478,6 +481,9 @@ public final class Api {
     }
 
     private static JSONObject openAiTurn(Provider p, ChatRequest req, Turn t) throws Exception {
+        if (Turn.LATEST_REMINDER.equals(t.role)) {
+            return new JSONObject().put("role", "latest_reminder").put("content", t.text);
+        }
         if (Turn.ASSISTANT.equals(t.role)) {
             if (t.rawJson != null && !t.rawJson.isEmpty()) {
                 try {
