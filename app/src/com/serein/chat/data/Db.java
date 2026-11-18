@@ -15,7 +15,7 @@ import org.json.JSONObject;
 public final class Db extends SQLiteOpenHelper {
 
     private static final String NAME = "deepseek.db";
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     public Db(Context c) {
         super(c.getApplicationContext(), NAME, null, VERSION);
@@ -42,11 +42,20 @@ public final class Db extends SQLiteOpenHelper {
                 + "in_tok INTEGER,"
                 + "out_tok INTEGER,"
                 + "hit INTEGER,"
-                + "miss INTEGER)");
+                + "miss INTEGER,"
+                + "ms INTEGER DEFAULT 0,"
+                + "ft_ms INTEGER DEFAULT 0)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE usage_log ADD COLUMN ms INTEGER DEFAULT 0");
+                db.execSQL("ALTER TABLE usage_log ADD COLUMN ft_ms INTEGER DEFAULT 0");
+            } catch (Exception ignored) {
+            }
+        }
         if (oldVersion < 2) {
             db.execSQL("CREATE TABLE IF NOT EXISTS usage_log ("
                     + "ts INTEGER, model TEXT, in_tok INTEGER, out_tok INTEGER,"
@@ -64,7 +73,46 @@ public final class Db extends SQLiteOpenHelper {
         v.put("out_tok", u.outputTokens);
         v.put("hit", u.cacheHit);
         v.put("miss", u.cacheMiss);
+        v.put("ms", u.elapsedMs);
+        v.put("ft_ms", u.firstTokenMs);
         getWritableDatabase().insert("usage_log", null, v);
+    }
+
+    /** 本地性能汇总：[次数, 平均首字ms, 最快首字ms, 最慢首字ms, 平均tok/s, 平均总耗时ms]。
+     *  仅统计有效行（旧版本记录 ms/ft_ms 为 0，需排除，否则平均值会被拉低）。 */
+    public long[] perfSummary(int limit) {
+        android.database.Cursor c = getReadableDatabase().rawQuery(
+                "SELECT COUNT(*),"
+                        + " IFNULL(AVG(CASE WHEN ft_ms>0 THEN ft_ms END),0),"
+                        + " IFNULL(MIN(CASE WHEN ft_ms>0 THEN ft_ms END),0),"
+                        + " IFNULL(MAX(CASE WHEN ft_ms>0 THEN ft_ms END),0),"
+                        + " IFNULL(SUM(CASE WHEN ms>0 THEN out_tok ELSE 0 END),0),"
+                        + " IFNULL(SUM(CASE WHEN ms>0 THEN ms ELSE 0 END),0),"
+                        + " COUNT(CASE WHEN ms>0 THEN 1 END)"
+                        + " FROM (SELECT * FROM usage_log ORDER BY ts DESC LIMIT " + Math.max(1, limit) + ")",
+                null);
+        try {
+            if (c.moveToFirst()) {
+                long count = c.getLong(0);
+                long avgFt = c.getLong(1);
+                long minFt = c.getLong(2);
+                long maxFt = c.getLong(3);
+                long outSum = c.getLong(4);
+                long msSum = c.getLong(5);
+                long msCount = c.getLong(6);
+                long tps = msSum > 0 ? Math.round(outSum * 1000.0 / msSum) : 0;
+                long avgMs = msCount > 0 ? msSum / msCount : 0;
+                return new long[]{count, avgFt, minFt, maxFt, tps, avgMs};
+            }
+        } finally {
+            c.close();
+        }
+        return new long[]{0, 0, 0, 0, 0, 0};
+    }
+
+    /** 清空本地性能记录。 */
+    public void clearUsageLog() {
+        getWritableDatabase().delete("usage_log", null, null);
     }
 
     /** 累计缓存命中 token 数与请求数。 */

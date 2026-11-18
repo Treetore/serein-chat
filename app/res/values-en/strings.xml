@@ -202,4 +202,13 @@
     <string name="advanced_max_tokens_desc">Limits output of a single reasoning step, not the whole turn</string>
     <string name="param_default">Default</string>
     <string name="advanced_locked_short">Locked · </string>
+    <string name="perf_title">Performance</string>
+    <string name="perf_summary">Last %1$d requests</string>
+    <string name="perf_first">Avg first token %1$s</string>
+    <string name="perf_range">Fastest %1$s · Slowest %2$s</string>
+    <string name="perf_speed">Avg speed %1$d tok/s</string>
+    <string name="perf_total">Avg duration %1$s</string>
+    <string name="perf_local_note">Stored on this device only. No message content, never uploaded.</string>
+    <string name="perf_clear">Clear stats</string>
+    <string name="perf_empty">No data yet — send a few messages first</string>
 </resources>

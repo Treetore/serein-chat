@@ -277,6 +277,12 @@ public final class Sheets {
         });
         body.addView(del);
 
+        // --- 性能统计（本机数据） ---
+        final com.serein.chat.data.Db perfDb = new com.serein.chat.data.Db(c);
+        body.addView(valueRow(c, t, c.getString(R.string.perf_title),
+                v -> SettingsPanels.perf(act, t, root, perfDb, () -> {
+                })));
+
         // --- 关于 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.about)));
         body.addView(iconRow(c, t, R.drawable.ic_github,

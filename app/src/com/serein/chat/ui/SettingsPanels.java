@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import com.serein.chat.R;
 import com.serein.chat.api.Api;
+import com.serein.chat.data.Db;
 import com.serein.chat.data.Prefs;
 import com.serein.chat.data.Provider;
 
@@ -34,6 +35,13 @@ public final class SettingsPanels {
     }
 
     // ------------------------------------------------------------------ 服务商列表
+
+    /** 协议显示名。 */
+    static String protoName(String protocol) {
+        if (Provider.PROTO_ANTHROPIC.equals(protocol)) return "Anthropic";
+        if (Provider.PROTO_RESPONSES.equals(protocol)) return "Responses";
+        return "OpenAI";
+    }
 
     public static void providers(Activity a, Theme t, FrameLayout root, Prefs prefs, Runnable changed) {
         Context c = a;
@@ -51,7 +59,7 @@ public final class SettingsPanels {
             LinearLayout texts = new LinearLayout(c);
             texts.setOrientation(LinearLayout.VERTICAL);
             TextView name = Ui.text(c, p.name, 14, t.labelPrimary);
-            TextView meta = Ui.text(c, (Provider.PROTO_ANTHROPIC.equals(p.protocol) ? "Anthropic" : "OpenAI")
+            TextView meta = Ui.text(c, protoName(p.protocol)
                     + " · " + host(p.baseUrl), 11, t.labelTertiary);
             texts.addView(name);
             texts.addView(meta);
@@ -92,6 +100,66 @@ public final class SettingsPanels {
         });
         card.addView(sv);
         closeRef[0] = Sheets.showBottom(root, t, card, null);
+    }
+
+    /** 本地性能统计面板：首字延迟、生成速度、总耗时（仅本机数据）。 */
+    public static void perf(Activity a, Theme t, FrameLayout root, Db db, Runnable onCleared) {
+        Context c = a;
+        LinearLayout card = Sheets.sheetCard(c, t);
+        LinearLayout body = new LinearLayout(c);
+        body.setOrientation(LinearLayout.VERTICAL);
+
+        long[] s = db.perfSummary(50);
+        if (s[0] <= 0) {
+            TextView empty = Ui.text(c, c.getString(R.string.perf_empty), 14, t.labelTertiary);
+            empty.setPadding(Ui.dp(18), Ui.dp(16), Ui.dp(18), Ui.dp(28));
+            body.addView(empty);
+        } else {
+            TextView head = Ui.text(c, c.getString(R.string.perf_summary, (int) s[0]), 12, t.labelTertiary);
+            head.setPadding(Ui.dp(18), Ui.dp(4), Ui.dp(18), Ui.dp(8));
+            body.addView(head);
+
+            body.addView(perfLine(c, t, c.getString(R.string.perf_first, ms(s[1]))));
+            body.addView(perfLine(c, t, c.getString(R.string.perf_range, ms(s[2]), ms(s[3]))));
+            body.addView(perfLine(c, t, c.getString(R.string.perf_speed, (int) s[4])));
+            body.addView(perfLine(c, t, c.getString(R.string.perf_total, ms(s[5]))));
+        }
+
+        TextView note = Ui.text(c, c.getString(R.string.perf_local_note), 11, t.labelCaption);
+        note.setPadding(Ui.dp(18), Ui.dp(10), Ui.dp(18), Ui.dp(6));
+        note.setLineSpacing(Ui.dp(2), 1f);
+        body.addView(note);
+
+        TextView clear = Ui.text(c, c.getString(R.string.perf_clear), 14, t.error);
+        clear.setPadding(Ui.dp(18), Ui.dp(12), Ui.dp(18), Ui.dp(18));
+        Ui.pressable(clear, Ui.round(0x00000000, 10), 10, t.hoverAccent);
+        body.addView(clear);
+
+        Runnable[] closeRef = new Runnable[1];
+        clear.setOnClickListener(v -> {
+            db.clearUsageLog();
+            if (onCleared != null) onCleared.run();
+            if (closeRef[0] != null) closeRef[0].run();
+        });
+
+        Sheets.header(c, t, card, c.getString(R.string.perf_title), () -> {
+            if (closeRef[0] != null) closeRef[0].run();
+        });
+        card.addView(body);
+        closeRef[0] = Sheets.showBottom(root, t, card, null);
+    }
+
+    private static TextView perfLine(Context c, Theme t, String text) {
+        TextView v = Ui.text(c, text, 14, t.labelPrimary);
+        v.setPadding(Ui.dp(18), Ui.dp(7), Ui.dp(18), Ui.dp(7));
+        return v;
+    }
+
+    /** 毫秒转可读文本：0.8s / 850ms / 12.3s。 */
+    private static String ms(long v) {
+        if (v <= 0) return "-";
+        if (v < 1000) return v + "ms";
+        return String.format(Locale.US, "%.1fs", v / 1000.0);
     }
 
     /** 高级参数：采样温度与单步最大输出（思考/联网开启时由服务端接管，面板置灰）。 */

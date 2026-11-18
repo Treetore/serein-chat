@@ -196,6 +196,11 @@ public class MainActivity extends Activity implements
                 buildUi();
             }
         }
+        String open = it.getStringExtra("open");
+        if ("perf".equals(open)) {
+            main.postDelayed(() -> com.serein.chat.ui.SettingsPanels.perf(
+                    this, theme, modalHost, new com.serein.chat.data.Db(this), null), 900);
+        }
         if ("1".equals(it.getStringExtra("newchat"))) {
             main.postDelayed(this::newChat, 200);
         }
