@@ -28,3 +28,4 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 
 ### 校验
 - 包名 `com.serein.chat`，versionCode 12，minSdk 26 / targetSdk 35
+- SHA-256：`aa0533673a3297e156f188f07728e676029bbfa96f72dcd378f87b15a8647820`
