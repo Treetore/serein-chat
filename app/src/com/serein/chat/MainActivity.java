@@ -1177,11 +1177,40 @@ public class MainActivity extends Activity implements
 
     @Override
     public void onOpenSources(Models.Message m) {
+        // 合并「搜索来源」与「正文引用」，按 URL 去重，保持出现顺序
         List<Models.Source> all = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
         for (Models.Block b : m.blocks) {
-            if (b.type == Models.B_SEARCH_RESULT) all.addAll(b.sources);
+            if (b.type == Models.B_SEARCH_RESULT) {
+                for (Models.Source s : b.sources) {
+                    if (s == null || s.url == null || s.url.isEmpty()) continue;
+                    if (!seen.add(s.url)) continue;
+                    all.add(s);
+                }
+            }
+            for (Models.Citation c : b.citations) {
+                if (c == null || c.url == null || c.url.isEmpty()) continue;
+                if (!seen.add(c.url)) continue;
+                Models.Source s = new Models.Source();
+                s.url = c.url;
+                s.title = c.title == null ? "" : c.title;
+                s.snippet = c.text == null ? "" : c.text;
+                s.site = hostOf(c.url);
+                all.add(s);
+            }
         }
         Sheets.sources(this, theme, modalHost, all);
+    }
+
+    /** 取 URL 的站点名，供引用列表展示。 */
+    private static String hostOf(String url) {
+        try {
+            String h = android.net.Uri.parse(url).getHost();
+            if (h == null) return "";
+            return h.startsWith("www.") ? h.substring(4) : h;
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     @Override
