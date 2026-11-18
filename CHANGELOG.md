@@ -11,6 +11,32 @@
   `server_tool_calls`（来源）与 `annotations`（引用）
 - 同时补齐该协议下的 `safety_check` 与 `title`
 
+## v1.70 — Responses API（第三种协议）
+
+### 新增
+- **Responses API 接入**：服务商协议从两选一改为三选一（OpenAI / Anthropic / **Responses**）
+  - `POST {base}/responses`，语义化 SSE 事件解析：
+    `response.reasoning_text.delta`（思考）、`response.output_text.delta`（正文）、
+    `response.output_item.done`（`web_search_call` 搜索来源）、`completed/incomplete/failed`（用量与结束态）
+  - 参数映射：`reasoning.effort`、`max_output_tokens`、`temperature`、`safety_check`、`title`、联网工具
+  - 用量映射：`input_tokens_details.cached_tokens` → 缓存命中
+- **调试入口**（本地联调用）：`am start -e proto responses -e autosend 1 -e android.intent.extra.TEXT "..."`
+
+### 修复
+- 流式请求不再声明 gzip（改为 `Accept-Encoding: identity`），避免个别端点缺少 `Content-Encoding` 头时读到压缩字节
+- Responses 输入映射：`latest_reminder` 不再被当作 assistant 消息（否则服务端返回 400 `an assistant message must follow a user message`），改为并入紧随其后的用户消息前缀
+
+### 验证（真机 23113RKC6C / Android 16）
+```
+DSHRESP: code=200
+event=response.output_text.delta → response.output_text.done
+     → response.content_part.done → response.output_item.done → response.completed
+界面回复：「我是DeepSeek，由深度求索公司创造的AI助手…」用量正常
+```
+
+### 其它
+- 版本 1.60 → 1.70（versionCode 9）
+
 ## v1.60 — 高级参数可用化、归档防护、首字延迟、自动发版
 
 ### 新增

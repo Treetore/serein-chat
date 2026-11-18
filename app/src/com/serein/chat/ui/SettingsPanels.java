@@ -249,20 +249,21 @@ public final class SettingsPanels {
         LinearLayout protoRow = Ui.row(c);
         TextView openai = Sheets.themeChip(c, t, "OpenAI", Provider.PROTO_OPENAI.equals(draft.protocol));
         TextView anthropic = Sheets.themeChip(c, t, "Anthropic", Provider.PROTO_ANTHROPIC.equals(draft.protocol));
+        TextView responses = Sheets.themeChip(c, t, "Responses", Provider.PROTO_RESPONSES.equals(draft.protocol));
+        TextView[] all = {openai, anthropic, responses};
+        String[] values = {Provider.PROTO_OPENAI, Provider.PROTO_ANTHROPIC, Provider.PROTO_RESPONSES};
         final String[] protocol = {draft.protocol};
-        openai.setOnClickListener(v -> {
-            protocol[0] = Provider.PROTO_OPENAI;
-            Sheets.chipSelect(openai, anthropic, true, t);
-        });
-        anthropic.setOnClickListener(v -> {
-            protocol[0] = Provider.PROTO_ANTHROPIC;
-            Sheets.chipSelect(openai, anthropic, false, t);
-        });
-        LinearLayout.LayoutParams prlp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        prlp.rightMargin = Ui.dp(8);
-        protoRow.addView(openai, prlp);
-        protoRow.addView(anthropic);
+        for (int i = 0; i < all.length; i++) {
+            final int idx = i;
+            all[i].setOnClickListener(v -> {
+                protocol[0] = values[idx];
+                for (int k = 0; k < all.length; k++) Sheets.styleChip(all[k], k == idx, t);
+            });
+            LinearLayout.LayoutParams prlp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            prlp.rightMargin = Ui.dp(8);
+            protoRow.addView(all[i], prlp);
+        }
         box.addView(protoRow);
 
         box.addView(label(c, t, c.getString(R.string.base_url)));

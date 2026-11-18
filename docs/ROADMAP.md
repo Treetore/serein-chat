@@ -82,7 +82,7 @@
 
 ## P2 · 协议与体验
 
-- **Responses API**（`POST /responses`）作为第三种协议接入，复用现有 UI
+- **Responses API**（`POST /responses`）作为第三种协议接入，复用现有 UI ✅ 已完成（v1.70）
 - **官方 TTS / ASR** ✅ 已完成（v1.50）：用 `/tts`、`/asr` 替换系统能力，解决系统 TTS 音色呆板、识别中文标点差的问题
 - **缓存可视化** ✅ 已完成（v1.50）：`cache_read_input_tokens` / `cache_creation_input_tokens` 已进用量条，补「本轮节省 ≈ 命中 tokens ÷ 输入 tokens」文案
 - **JSON Output / Tool Calls**：给高级用户开放响应格式与自定义工具注册

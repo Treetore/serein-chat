@@ -63,6 +63,8 @@ public final class Api {
         try {
             if (Provider.PROTO_ANTHROPIC.equals(p.protocol)) {
                 streamAnthropic(p, req, l, cancelled);
+            } else if (Provider.PROTO_RESPONSES.equals(p.protocol)) {
+                streamResponses(p, req, l, cancelled);
             } else {
                 streamOpenAi(p, req, l, cancelled);
             }
@@ -81,6 +83,206 @@ public final class Api {
         if (p.official()) return base + "/anthropic/v1/messages";
         if (base.endsWith("/v1")) return base + "/messages";
         return base + "/v1/messages";
+    }
+
+    /** Responses API（第三种协议）：POST {base}/responses，语义化 SSE 事件。 */
+    private static void streamResponses(Provider p, ChatRequest req, Listener l,
+                                        AtomicBoolean cancelled) throws Exception {
+        JSONObject body = new JSONObject();
+        body.put("model", req.model);
+        body.put("stream", true);
+        if (req.system != null && !req.system.isEmpty()) body.put("instructions", req.system);
+        if (req.temperature > 0) {
+            body.put("temperature", Math.round(req.temperature * 10) / 10.0);
+        }
+        if (req.maxTokens > 0) body.put("max_output_tokens", req.maxTokens);
+        JSONObject reasoning = new JSONObject();
+        if (req.thinking && req.effort != null && !req.effort.isEmpty()) {
+            reasoning.put("effort", req.effort);
+        } else if (!req.thinking) {
+            reasoning.put("effort", "none");
+        }
+        body.put("reasoning", reasoning);
+        if (p.official()) {
+            JSONArray tools = new JSONArray();
+            tools.put(new JSONObject().put("type", "deepseek_read_url"));
+            if (req.search) tools.put(new JSONObject().put("type", "deepseek_web_search"));
+            body.put("tools", tools);
+            body.put("safety_check", new JSONObject().put("level", "high"));
+            if (req.withTitle) body.put("title", new JSONObject().put("enabled", true));
+        }
+        body.put("input", responseInput(req));
+
+        HttpURLConnection conn = open(trimSlash(p.baseUrl) + "/responses", p.apiKey, true);
+        try {
+            writeBody(conn, body.toString());
+            int code = conn.getResponseCode();
+            if (code >= 400) throw readError(conn, code);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(decoded(conn), StandardCharsets.UTF_8), 8192);
+            String line;
+            int textIndex = -1;
+            int thinkIndex = -1;
+            int nextIndex = 0;
+            boolean started = false;
+            String finish = "end_turn";
+            Usage usage = null;
+
+            while ((line = reader.readLine()) != null) {
+                if (cancelled != null && cancelled.get()) return;
+                if (line.isEmpty() || line.charAt(0) == ':') continue;
+                if (!line.startsWith("data:")) {
+                    continue;
+                }
+                String data = line.substring(5).trim();
+                JSONObject o = parse(data);
+                if (o == null) continue;
+                String type = str(o, "type");
+                if (!started) {
+                    started = true;
+                    JSONObject resp = o.optJSONObject("response");
+                    String id = resp == null ? "" : str(resp, "id");
+                    l.onMessageStart(id, req.model);
+                }
+                if ("response.reasoning_text.delta".equals(type)) {
+                    String d = str(o, "delta");
+                    if (!d.isEmpty()) {
+                        if (thinkIndex < 0) {
+                            thinkIndex = nextIndex++;
+                            Models.Block b = new Models.Block();
+                            b.type = Models.B_THINKING;
+                            b.startedAt = System.currentTimeMillis();
+                            l.onBlockStart(thinkIndex, b);
+                        }
+                        l.onThinkingDelta(thinkIndex, d);
+                    }
+                    continue;
+                }
+                if ("response.output_text.delta".equals(type)) {
+                    String d = str(o, "delta");
+                    if (!d.isEmpty()) {
+                        if (thinkIndex >= 0) {
+                            l.onBlockStop(thinkIndex);
+                            thinkIndex = -1;
+                        }
+                        if (textIndex < 0) {
+                            textIndex = nextIndex++;
+                            Models.Block b = new Models.Block();
+                            b.type = Models.B_TEXT;
+                            l.onBlockStart(textIndex, b);
+                        }
+                        l.onTextDelta(textIndex, d);
+                    }
+                    continue;
+                }
+                if ("response.output_item.done".equals(type)) {
+                    JSONObject item = o.optJSONObject("item");
+                    if (item != null && "web_search_call".equals(str(item, "type"))) {
+                        Models.Block use = new Models.Block();
+                        use.type = Models.B_TOOL_USE;
+                        use.id = str(item, "id");
+                        use.name = "deepseek_web_search";
+                        use.kind = "search";
+                        JSONObject action = item.optJSONObject("action");
+                        if (action != null) {
+                            JSONArray qs = action.optJSONArray("queries");
+                            if (qs != null) for (int q = 0; q < qs.length(); q++) use.queries.add(qs.optString(q));
+                        }
+                        int ui = nextIndex++;
+                        l.onBlockStart(ui, use);
+                        l.onBlockStop(ui);
+                        JSONArray srcs = item.optJSONArray("sources");
+                        if (srcs != null && srcs.length() > 0) {
+                            Models.Block res = new Models.Block();
+                            res.type = Models.B_SEARCH_RESULT;
+                            res.kind = "search";
+                            res.id = use.id;
+                            for (int k = 0; k < srcs.length(); k++) {
+                                JSONObject so = srcs.optJSONObject(k);
+                                if (so == null) continue;
+                                Models.Source src = new Models.Source();
+                                src.title = str(so, "title");
+                                src.url = str(so, "url");
+                                src.snippet = str(so, "snippet");
+                                res.sources.add(src);
+                            }
+                            int ri = nextIndex++;
+                            l.onBlockStart(ri, res);
+                            l.onBlockStop(ri);
+                        }
+                    }
+                    continue;
+                }
+                if ("response.completed".equals(type) || "response.incomplete".equals(type)
+                        || "response.failed".equals(type)) {
+                    JSONObject resp = o.optJSONObject("response");
+                    if (resp != null) {
+                        Usage u = responseUsage(resp.optJSONObject("usage"));
+                        if (u != null) {
+                            usage = u;
+                            l.onUsage(u);
+                        }
+                        if ("response.failed".equals(type)) {
+                            JSONObject err = resp.optJSONObject("error");
+                            String msg = err == null ? "响应失败" : str(err, "message");
+                            l.onError(new ApiException(ApiException.STREAM, msg, 0));
+                            return;
+                        }
+                    }
+                    if ("response.incomplete".equals(type)) finish = "max_tokens";
+                    break;
+                }
+            }
+            if (thinkIndex >= 0) l.onBlockStop(thinkIndex);
+            if (textIndex >= 0) l.onBlockStop(textIndex);
+            if (usage != null) l.onUsage(usage);
+            if ("refusal".equals(finish)) {
+                l.onMessageEnd(finish, null, "refusal");
+            } else {
+                l.onMessageEnd(finish, null, null);
+            }
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    /** Responses API 的 input item 列表：逐轮 message，正文用字符串形式。 */
+    private static JSONArray responseInput(ChatRequest req) throws Exception {
+        JSONArray arr = new JSONArray();
+        String pendingReminder = null;
+        for (Turn t : req.turns) {
+            if (t.role == null) continue;
+            String text = t.text == null ? "" : t.text;
+            if (Turn.LATEST_REMINDER.equals(t.role)) {
+                pendingReminder = text;
+                continue;
+            }
+            if (Turn.ASSISTANT.equals(t.role) && text.isEmpty()) continue;
+            boolean user = Turn.USER.equals(t.role);
+            if (user && pendingReminder != null) {
+                text = pendingReminder + (text.isEmpty() ? "" : "\n\n" + text);
+                pendingReminder = null;
+            }
+            JSONObject m = new JSONObject();
+            m.put("type", "message");
+            m.put("role", user ? "user" : "assistant");
+            m.put("content", text);
+            arr.put(m);
+        }
+        return arr;
+    }
+
+    /** Responses API 用量映射。 */
+    private static Usage responseUsage(JSONObject u) {
+        if (u == null) return null;
+        Usage out = new Usage();
+        out.inputTokens = u.optInt("input_tokens");
+        out.outputTokens = u.optInt("output_tokens");
+        JSONObject in = u.optJSONObject("input_tokens_details");
+        if (in != null) out.cacheHit = in.optInt("cached_tokens", 0);
+        out.cacheMiss = Math.max(0, out.inputTokens - out.cacheHit);
+        if (out.inputTokens == 0 && out.outputTokens == 0) return null;
+        return out;
     }
 
     private static void streamAnthropic(Provider p, ChatRequest req, Listener l,
@@ -766,7 +968,7 @@ public final class Api {
         conn.setReadTimeout(300000);
         if (post) conn.setDoOutput(true);
         conn.setRequestProperty("Accept", post ? "text/event-stream, application/json" : "application/json");
-        conn.setRequestProperty("Accept-Encoding", "gzip");
+        conn.setRequestProperty("Accept-Encoding", "identity");
         conn.setRequestProperty("User-Agent", UA);
         if (apiKey != null && !apiKey.isEmpty()) {
             conn.setRequestProperty("Authorization", "Bearer " + apiKey);
@@ -788,7 +990,11 @@ public final class Api {
 
     private static InputStream decoded(HttpURLConnection conn) throws IOException {
         InputStream raw = conn.getInputStream();
-        return "gzip".equalsIgnoreCase(conn.getContentEncoding()) ? new GZIPInputStream(raw) : raw;
+        String enc = conn.getContentEncoding();
+        if (enc == null) return raw;
+        String e = enc.toLowerCase(java.util.Locale.US);
+        if (e.contains("gzip")) return new GZIPInputStream(raw);
+        return raw;
     }
 
     private static ApiException readError(HttpURLConnection conn, int code) {

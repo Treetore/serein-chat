@@ -11,6 +11,7 @@ public final class Provider {
 
     public static final String PROTO_OPENAI = "openai";
     public static final String PROTO_ANTHROPIC = "anthropic";
+    public static final String PROTO_RESPONSES = "responses";
 
     public String id = "";
     public String name = "";
