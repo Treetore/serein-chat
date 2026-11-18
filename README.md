@@ -2,20 +2,20 @@
 
 **纯原生、零依赖的 Android AI 聊天客户端。** 直连模型服务商 API，不经过任何中转服务器。
 
-<!-- 徽章区：把 OWNER/REPO 换成你的 GitHub 用户名与仓库名 -->
+<!-- 徽章区：把 Treetore/serein-chat 换成你的 GitHub 用户名与仓库名 -->
 <p align="center">
-  <a href="https://github.com/OWNER/REPO/releases"><img alt="release" src="https://img.shields.io/github/v/release/OWNER/REPO?label=release&color=3964FE"></a>
-  <img alt="downloads" src="https://img.shields.io/github/downloads/OWNER/REPO/total?color=3964FE">
-  <img alt="license" src="https://img.shields.io/github/license/OWNER/REPO?color=3964FE">
+  <a href="https://github.com/Treetore/serein-chat/releases"><img alt="release" src="https://img.shields.io/github/v/release/Treetore/serein-chat?label=release&color=3964FE"></a>
+  <img alt="downloads" src="https://img.shields.io/github/downloads/Treetore/serein-chat/total?color=3964FE">
+  <img alt="license" src="https://img.shields.io/github/license/Treetore/serein-chat?color=3964FE">
   <img alt="platform" src="https://img.shields.io/badge/Android-8.0%2B-3964FE">
-  <img alt="size" src="https://img.shields.io/github/repo-size/OWNER/REPO?color=3964FE">
+  <img alt="size" src="https://img.shields.io/github/repo-size/Treetore/serein-chat?color=3964FE">
 </p>
 
 <p align="center">
   <!-- 访问量小插件：无需自建服务，页面加载即计数 -->
-  <a href="https://github.com/OWNER/REPO"><img alt="visitors" src="https://api.visitorbadge.io/api/visitors?path=OWNER%2FREPO&label=%E8%AE%BF%E9%97%AE%E9%87%8F&countColor=%233964FE"></a>
+  <a href="https://github.com/Treetore/serein-chat"><img alt="visitors" src="https://api.visitorbadge.io/api/visitors?path=Treetore%2Fserein-chat&label=%E8%AE%BF%E9%97%AE%E9%87%8F&countColor=%233964FE"></a>
   <!-- 备用计数器（如上方失效可换用）
-  <a href="https://github.com/OWNER/REPO"><img alt="visitors" src="https://visitor-badge.laobi.icu/badge?page_id=OWNER.REPO&left_text=visitors"></a>
+  <a href="https://github.com/Treetore/serein-chat"><img alt="visitors" src="https://visitor-badge.laobi.icu/badge?page_id=Treetore.serein-chat&left_text=visitors"></a>
   -->
 </p>
 
