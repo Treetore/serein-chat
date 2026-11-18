@@ -1,5 +1,9 @@
 # 更新日志
 
+### 修复（v1.50 热更新 · 第二批）
+- **设置项点击后浮层消失**：音色与地区改为原地刷新行内文字，不再触发整屏重建
+  （此前调用 onProviderChanged → rebuildForTheme，会把设置浮层连同 modalHost 一起销毁）
+
 ### 修复（v1.50 热更新）
 - **OpenAI 兼容协议下联网搜索无效**：`deepseek_web_search` / `deepseek_read_url` 只在 Anthropic 分支声明，
   Chat Completions 分支从未下发 `tools`，模型因此"无法联网"。已按官方 Chat Completions 形态补齐：

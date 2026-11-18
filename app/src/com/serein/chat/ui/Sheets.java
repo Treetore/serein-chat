@@ -178,24 +178,36 @@ public final class Sheets {
         // --- 地区（latest_reminder） ---
         body.addView(sectionTitle(c, t, c.getString(R.string.settings_location)));
         String loc = prefs.location();
-        body.addView(valueRow(c, t,
+        final View[] locRowRef = new View[1];
+        locRowRef[0] = valueRow(c, t,
                 loc == null || loc.isEmpty() ? c.getString(R.string.location_unset) : loc,
-                v -> {
-                    close.run();
-                    SettingsPanels.editLocation(act, t, prefs, () -> host.onProviderChanged());
+                v -> SettingsPanels.editLocation(act, t, prefs, () -> {
+                    String now = prefs.location();
+                    TextView label = valueLabel(locRowRef[0]);
+                    if (label != null) {
+                        label.setText(now == null || now.isEmpty()
+                                ? c.getString(R.string.location_unset) : now);
+                    }
                 }));
+        body.addView(locRowRef[0]);
 
         // --- 朗读音色 ---
         body.addView(sectionTitle(c, t, c.getString(R.string.tts_voice)));
         String voice = prefs.ttsVoice();
-        body.addView(valueRow(c, t,
+        final View[] voiceRowRef = new View[1];
+        voiceRowRef[0] = valueRow(c, t,
                 "tide".equals(voice) ? c.getString(R.string.tts_voice_tide)
                         : c.getString(R.string.tts_voice_stella),
                 v -> {
                     prefs.setTtsVoice("tide".equals(prefs.ttsVoice()) ? "stella" : "tide");
-                    host.onProviderChanged();
-                    close.run();
-                }));
+                    TextView label = valueLabel(voiceRowRef[0]);
+                    if (label != null) {
+                        label.setText("tide".equals(prefs.ttsVoice())
+                                ? c.getString(R.string.tts_voice_tide)
+                                : c.getString(R.string.tts_voice_stella));
+                    }
+                });
+        body.addView(voiceRowRef[0]);
 
         // --- 高级参数（P0-4：被服务端接管的参数说明） ---
         body.addView(sectionTitle(c, t, c.getString(R.string.advanced_params)));
@@ -303,6 +315,17 @@ public final class Sheets {
         row.addView(Ui.icon(c, R.drawable.ic_expand_more, t.labelCaption, 16));
         row.setOnClickListener(l);
         return row;
+    }
+
+    /** 取可点行里的值文字（用于原地刷新，避免整屏重建）。 */
+    static TextView valueLabel(View row) {
+        if (row instanceof LinearLayout) {
+            LinearLayout ll = (LinearLayout) row;
+            for (int i = 0; i < ll.getChildCount(); i++) {
+                if (ll.getChildAt(i) instanceof TextView) return (TextView) ll.getChildAt(i);
+            }
+        }
+        return null;
     }
 
     private static View valueRow(Context c, Theme t, String value, View.OnClickListener l) {

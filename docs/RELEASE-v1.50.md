@@ -24,3 +24,8 @@ ASR bytes=586221                 → 200，输入框回填「这是语音识别�
 ### 校验
 - 包名 `com.serein.chat`，versionCode 7，minSdk 26 / targetSdk 35
 - SHA-256：`e021887ff41c8e4914f73f86ef50ee0216d43f61e68d0c37b523c7a35b57cc42`
+
+### 热更新（同版本）
+- **修复：OpenAI 兼容协议下无法联网搜索** —— 该分支此前从未下发 `tools`。现已按官方 Chat Completions 形态声明
+  `{"type":"deepseek_read_url"}` 与 `{"type":"deepseek_web_search"}`，并解析响应中的 `server_tool_calls`（来源）
+  与 `annotations`（引用）；同时补齐 `safety_check` 与 `title`
