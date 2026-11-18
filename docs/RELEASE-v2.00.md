@@ -38,3 +38,12 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 ### 热修复校验
 - 包名 com.serein.chat，versionCode 12 / versionName 2.00（未升版本）
 - SHA-256：\$sha
+
+### 热修复（同版本 2.00 · 第二批）
+- **图片上传失败**：图片分支此前跳过 purpose 字段，Files API 要求必填 →
+  现在统一发送（图片默认 user_data）。图片上传失败时自动退化为 base64 内联，不再中断附件流程。
+- **协议差异提示**：OpenAI（Chat Completions）协议没有文档块形态，附件文档无法进入上下文，
+  现在附加文档时会明确提示切换到 Anthropic / Responses。
+
+### 第二批校验
+- SHA-256：\$sha

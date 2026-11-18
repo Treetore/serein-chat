@@ -1355,11 +1355,10 @@ public final class Api {
 
             OutputStream os = conn.getOutputStream();
             boolean isImage = mime != null && mime.startsWith("image/");
-            if (!isImage) {
-                // purpose 必须出现在 file 字段之前
-                writeField(os, boundary, "purpose",
-                        purpose == null || purpose.isEmpty() ? PURPOSE_TEXT : purpose);
-            }
+            // purpose 必须出现在 file 字段之前，图片同样需要（此前被跳过，导致图片上传 400）
+            String effPurpose = purpose == null || purpose.isEmpty()
+                    ? (isImage ? PURPOSE_USER_DATA : PURPOSE_TEXT) : purpose;
+            writeField(os, boundary, "purpose", effPurpose);
             String safeName = file.getName().replace("\"", "_");
             os.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
             os.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + safeName + "\"\r\n")

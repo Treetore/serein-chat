@@ -212,4 +212,5 @@
     <string name="perf_clear">清空统计</string>
     <string name="perf_empty">还没有数据，先发几条消息吧</string>
     <string name="usage_cost">约 %1$s</string>
+    <string name="doc_unsupported_protocol">当前 OpenAI 协议不支持文档解析，请切换到 Anthropic 或 Responses</string>
 </resources>

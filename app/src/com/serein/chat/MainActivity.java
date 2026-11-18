@@ -1615,9 +1615,20 @@ public class MainActivity extends Activity implements
                             || lower.endsWith(".ts") || lower.endsWith(".kt"));
                     String purpose = ref.image ? null
                             : textFile ? Api.PURPOSE_USER_DATA : Api.PURPOSE_TEXT;
-                    ref.serverId = Api.uploadFile(target, cache, ref.mime, purpose, cancelFlag);
+                    try {
+                        ref.serverId = Api.uploadFile(target, cache, ref.mime, purpose, cancelFlag);
+                    } catch (Exception up) {
+                        // 图片可退化 base64 内联；文档没有 file_id 就无法解析，仍然报错
+                        if (!ref.image) throw up;
+                        ref.serverId = "";
+                    }
                 }
                 // 其它服务商：不预上传，发送时按 base64 内联（需模型具备视觉能力）
+                if (!ref.image && target.official()
+                        && Provider.PROTO_OPENAI.equals(target.protocol)) {
+                    // Chat Completions 没有文档块，上传了也进不了上下文，明确告知
+                    main.post(() -> Ui.toast(this, getString(R.string.doc_unsupported_protocol)));
+                }
                 ref.status = "ready";
                 main.post(() -> inputBar.setFiles(pendingFiles));
             } catch (Exception e) {
