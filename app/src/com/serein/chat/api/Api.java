@@ -249,6 +249,15 @@ public final class Api {
             if (req.thinking && req.effort != null && !req.effort.isEmpty()) {
                 body.put("reasoning_effort", req.effort);
             }
+            // 服务端联网工具：Chat Completions 形态为 {"type": "deepseek_xxx"}
+            JSONArray tools = new JSONArray();
+            tools.put(new JSONObject().put("type", "deepseek_read_url"));
+            if (req.search) {
+                tools.put(new JSONObject().put("type", "deepseek_web_search"));
+            }
+            body.put("tools", tools);
+            body.put("safety_check", new JSONObject().put("level", "high"));
+            if (req.withTitle) body.put("title", new JSONObject().put("enabled", true));
         }
 
         JSONArray prefix;
@@ -265,7 +274,6 @@ public final class Api {
             msgs.put(openAiTurn(p, req, req.turns.get(req.turns.size() - 1)));
         }
         body.put("messages", msgs);
-
         HttpURLConnection conn = open(openAiUrl(p), p.apiKey, true);
         try {
             writeBody(conn, body.toString());
@@ -327,6 +335,13 @@ public final class Api {
                     }
                     l.onThinkingDelta(thinkIndex, reasoning);
                 }
+                if (!fr.isEmpty()) {
+                    // 工具调用与引用只在带 finish_reason 的最后一个 chunk 下发
+                    int[] idx = new int[]{nextIndex, textIndex};
+                    readServerTools(delta, l, idx);
+                    nextIndex = idx[0];
+                    textIndex = idx[1];
+                }
                 String content = str(delta, "content");
                 if (!content.isEmpty()) {
                     if (thinkIndex >= 0) {
@@ -350,6 +365,114 @@ public final class Api {
                     "content_filter".equals(finish) || "refusal".equals(finish) ? "refusal" : null);
         } finally {
             conn.disconnect();
+        }
+    }
+
+    /**
+     * 解析 Chat Completions 的服务端工具结果：
+     * server_tool_calls[].calls[] 生成工具/来源块，annotations[] 生成引用。
+     * idx[0] = 下一个可用块下标，idx[1] = 当前正文块下标（可为 -1）。
+     */
+    private static void readServerTools(JSONObject delta, Listener l, int[] idx) {
+        try {
+            JSONArray steps = delta.optJSONArray("server_tool_calls");
+            if (steps != null) {
+                for (int i = 0; i < steps.length(); i++) {
+                    JSONObject step = steps.optJSONObject(i);
+                    if (step == null) continue;
+                    String stepReasoning = str(step, "reasoning_content");
+                    if (!stepReasoning.isEmpty()) {
+                        Models.Block t = new Models.Block();
+                        t.type = Models.B_THINKING;
+                        int ti = idx[0]++;
+                        t.startedAt = System.currentTimeMillis();
+                        l.onBlockStart(ti, t);
+                        l.onThinkingDelta(ti, stepReasoning);
+                        l.onBlockStop(ti);
+                    }
+                    JSONArray calls = step.optJSONArray("calls");
+                    if (calls == null) continue;
+                    for (int c = 0; c < calls.length(); c++) {
+                        JSONObject call = calls.optJSONObject(c);
+                        if (call == null) continue;
+                        String type = str(call, "type");
+                        String kind = str(call, "kind");
+                        JSONObject action = call.optJSONObject("action");
+                        boolean isSearch = type.contains("web_search");
+
+                        Models.Block use = new Models.Block();
+                        use.type = Models.B_TOOL_USE;
+                        use.id = str(call, "id");
+                        use.name = type;
+                        use.kind = kind;
+                        if (action != null) {
+                            JSONArray qs = action.optJSONArray("queries");
+                            if (qs != null) for (int q = 0; q < qs.length(); q++) use.queries.add(qs.optString(q));
+                            use.url = str(action, "url");
+                        }
+                        int ui = idx[0]++;
+                        l.onBlockStart(ui, use);
+                        l.onBlockStop(ui);
+
+                        if (isSearch) {
+                            JSONArray sources = call.optJSONArray("sources");
+                            if (sources != null) {
+                                Models.Block res = new Models.Block();
+                                res.type = Models.B_SEARCH_RESULT;
+                                res.kind = kind;
+                                res.id = use.id;
+                                for (int k = 0; k < sources.length(); k++) {
+                                    JSONObject so = sources.optJSONObject(k);
+                                    if (so == null) continue;
+                                    Models.Source src = new Models.Source();
+                                    src.title = str(so, "title");
+                                    src.url = str(so, "url");
+                                    src.snippet = str(so, "snippet");
+                                    src.site = str(so, "site_name");
+                                    src.age = str(so, "published_at");
+                                    res.sources.add(src);
+                                }
+                                if (res.sources.isEmpty() && "failed".equals(str(call, "status"))) {
+                                    res.failed = true;
+                                }
+                                int ri = idx[0]++;
+                                l.onBlockStart(ri, res);
+                                l.onBlockStop(ri);
+                            }
+                        } else {
+                            Models.Block res = new Models.Block();
+                            res.type = Models.B_FETCH_RESULT;
+                            res.kind = "read_link";
+                            res.id = use.id;
+                            JSONObject page = call.optJSONObject("page");
+                            if (page != null) {
+                                res.url = str(page, "url");
+                                res.fetchTitle = str(page, "title");
+                            }
+                            res.failed = "failed".equals(str(call, "status"));
+                            int ri = idx[0]++;
+                            l.onBlockStart(ri, res);
+                            l.onBlockStop(ri);
+                        }
+                    }
+                }
+            }
+
+            JSONArray ann = delta.optJSONArray("annotations");
+            if (ann != null && idx[1] >= 0) {
+                for (int i = 0; i < ann.length(); i++) {
+                    JSONObject a = ann.optJSONObject(i);
+                    if (a == null) continue;
+                    JSONObject uc = a.optJSONObject("url_citation");
+                    if (uc == null) continue;
+                    Models.Citation c = new Models.Citation();
+                    c.url = str(uc, "url");
+                    c.title = str(uc, "title");
+                    c.text = "";
+                    l.onCitation(idx[1], c);
+                }
+            }
+        } catch (Exception ignored) {
         }
     }
 

@@ -1,5 +1,12 @@
 # 更新日志
 
+### 修复（v1.50 热更新）
+- **OpenAI 兼容协议下联网搜索无效**：`deepseek_web_search` / `deepseek_read_url` 只在 Anthropic 分支声明，
+  Chat Completions 分支从未下发 `tools`，模型因此"无法联网"。已按官方 Chat Completions 形态补齐：
+  `tools: [{"type":"deepseek_read_url"},{"type":"deepseek_web_search"}]`，并解析响应中的
+  `server_tool_calls`（来源）与 `annotations`（引用）
+- 同时补齐该协议下的 `safety_check` 与 `title`
+
 ## v1.50 — 官方语音、缓存可视化、参数说明与项目入口
 
 ### 新增
