@@ -443,6 +443,13 @@ public final class Api {
 
     private static JSONObject anthropicTurn(Provider p, ChatRequest req, Turn t) throws Exception {
         if (Turn.ASSISTANT.equals(t.role)) {
+            if (t.rawJson != null && !t.rawJson.isEmpty()) {
+                try {
+                    return new JSONObject().put("role", "assistant")
+                            .put("content", new JSONArray(t.rawJson));
+                } catch (Exception ignored) {
+                }
+            }
             return new JSONObject().put("role", "assistant")
                     .put("content", new JSONObject().put("type", "text").put("text", t.text));
         }
@@ -472,6 +479,14 @@ public final class Api {
 
     private static JSONObject openAiTurn(Provider p, ChatRequest req, Turn t) throws Exception {
         if (Turn.ASSISTANT.equals(t.role)) {
+            if (t.rawJson != null && !t.rawJson.isEmpty()) {
+                try {
+                    JSONObject raw = new JSONObject(t.rawJson);
+                    raw.put("role", "assistant");
+                    return raw;
+                } catch (Exception ignored) {
+                }
+            }
             return new JSONObject().put("role", "assistant").put("content", t.text);
         }
         List<Models.FileRef> files = req.vision ? usableImages(t) : new ArrayList<>();
@@ -735,6 +750,14 @@ public final class Api {
     // ------------------------------------------------------------------ 内容块解析
 
     private static Models.Block readBlock(JSONObject o) {
+        Models.Block b = readBlockInner(o);
+        if (b != null && o != null) {
+            b.raw = o.toString();
+        }
+        return b;
+    }
+
+    private static Models.Block readBlockInner(JSONObject o) {
         if (o == null) return null;
         String type = o.optString("type");
         Models.Block b = new Models.Block();

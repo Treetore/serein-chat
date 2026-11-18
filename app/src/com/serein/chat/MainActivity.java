@@ -850,7 +850,7 @@ public class MainActivity extends Activity implements
                     if (cancelled.get() || text == null) return;
                     main.post(() -> {
                         Models.Block b = indexMap.get(index);
-                        if (b != null && b.type == Models.B_TEXT) b.text += text;
+                        if (b != null && b.type == Models.B_TEXT) b.appendText(text);
                         scheduleStreamUpdate();
                     });
                 }
@@ -860,20 +860,27 @@ public class MainActivity extends Activity implements
                     if (cancelled.get() || text == null) return;
                     main.post(() -> {
                         Models.Block b = indexMap.get(index);
-                        if (b != null && b.type == Models.B_THINKING) b.text += text;
+                        if (b != null && b.type == Models.B_THINKING) b.appendThinking(text);
                         scheduleStreamUpdate();
                     });
                 }
 
                 @Override
                 public void onSignatureDelta(int index, String signature) {
+                    main.post(() -> {
+                        Models.Block b = indexMap.get(index);
+                        if (b != null) b.appendSignature(signature);
+                    });
                 }
 
                 @Override
                 public void onCitation(int index, Models.Citation citation) {
                     main.post(() -> {
                         Models.Block b = indexMap.get(index);
-                        if (b != null) b.citations.add(citation);
+                        if (b != null) {
+                            b.citations.add(citation);
+                            if (citation != null) b.addCitationRaw(citation.url, citation.title, citation.text);
+                        }
                     });
                 }
 
@@ -934,6 +941,36 @@ public class MainActivity extends Activity implements
     }
 
 
+    /** 组合可回传的协议原生负载：Anthropic 用块数组，OpenAI 用消息对象。 */
+    private String buildRawPayload(Models.Message reply) {
+        try {
+            Provider p = provider == null ? prefs.activeProvider() : provider;
+            if (p != null && Provider.PROTO_ANTHROPIC.equals(p.protocol)) {
+                org.json.JSONArray arr = new org.json.JSONArray();
+                for (Models.Block b : reply.blocks) {
+                    String rw = b.rawJson();
+                    if (rw == null || rw.isEmpty()) continue;
+                    org.json.JSONObject o = new org.json.JSONObject(rw);
+                    // 历史遗留或降级路径可能缺 type：这类块不参与回传，避免服务端 400
+                    if (o.optString("type").isEmpty()) continue;
+                    arr.put(o);
+                }
+                return arr.length() == 0 ? "" : arr.toString();
+            }
+            org.json.JSONObject msg = new org.json.JSONObject();
+            msg.put("role", "assistant");
+            msg.put("content", reply.plainText());
+            String thinking = "";
+            for (Models.Block b : reply.blocks) {
+                if (b.type == Models.B_THINKING) thinking = b.text;
+            }
+            if (!thinking.isEmpty()) msg.put("reasoning_content", thinking);
+            return msg.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private void finishStream(Models.Message reply, String status, String error) {
         streamingTarget = null;
         // 结束后动作栏与用量条是后加的，需要再贴一次底
@@ -951,6 +988,8 @@ public class MainActivity extends Activity implements
                 b.endedAt = System.currentTimeMillis();
             }
         }
+        // 固化协议原生内容：下一轮原样回传（thinking 签名 / 工具块 / 引用）
+        reply.rawJson = buildRawPayload(reply);
         // 冻结本轮答复正文：后续轮次原样复用，服务端前缀缓存更容易命中
         if (Models.S_DONE.equals(status) && reply.hasVisibleText()) {
             reply.sentText = reply.plainText();
@@ -1018,7 +1057,9 @@ public class MainActivity extends Activity implements
             String answer = a.contextText();
             if (answer.trim().isEmpty()) continue;
             req.turns.add(userTurn(u));
-            req.turns.add(new Turn(Turn.ASSISTANT, answer));
+            Turn at = new Turn(Turn.ASSISTANT, answer);
+            if (a.rawJson != null && !a.rawJson.isEmpty()) at.rawJson = a.rawJson;
+            req.turns.add(at);
             i++;
         }
         if (question != null) req.turns.add(userTurn(question));

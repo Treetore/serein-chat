@@ -148,6 +148,77 @@ public final class Models {
         public String fetchTitle = "";
         public boolean failed;
         public String note = "";
+        /** 服务端返回的该内容块原始 JSON（下一轮原样回传用） */
+        public String raw = "";
+        private transient JSONObject rawObj;
+
+        private void ensureRaw() {
+            if (rawObj != null) return;
+            try {
+                rawObj = new JSONObject(raw == null || raw.isEmpty() ? "{}" : raw);
+            } catch (Exception e) {
+                rawObj = new JSONObject();
+            }
+        }
+
+        private void putRaw(String key, Object value) {
+            ensureRaw();
+            try {
+                rawObj.put(key, value);
+            } catch (Exception ignored) {
+            }
+        }
+
+        /** 追加正文并同步原始块 */
+        public void appendText(String delta) {
+            text = text + delta;
+            ensureRaw();
+            try { if (!rawObj.has("type")) rawObj.put("type", "text"); } catch (Exception ignored) {}
+            putRaw("text", text);
+        }
+
+        /** 追加思考正文并同步原始块 */
+        public void appendThinking(String delta) {
+            text = text + delta;
+            ensureRaw();
+            try {
+                if (!rawObj.has("type")) rawObj.put("type", "thinking");
+                if (!rawObj.has("signature")) rawObj.put("signature", "");
+            } catch (Exception ignored) {}
+            putRaw("thinking", text);
+        }
+
+        public void appendSignature(String sig) {
+            if (sig == null) return;
+            signature = signature + sig;
+            putRaw("signature", signature);
+        }
+
+        /** 追加引用（保留服务端字段） */
+        public void addCitationRaw(String url, String title, String citedText) {
+            ensureRaw();
+            try {
+                JSONArray arr = rawObj.optJSONArray("citations");
+                if (arr == null) {
+                    arr = new JSONArray();
+                    rawObj.put("citations", arr);
+                }
+                arr.put(new JSONObject().put("type", "web_search_result_location")
+                        .put("url", url == null ? "" : url)
+                        .put("title", title == null ? "" : title)
+                        .put("cited_text", citedText == null ? "" : citedText));
+            } catch (Exception ignored) {
+            }
+        }
+
+        /** 落盘/回传前取出最终原始 JSON */
+        public String rawJson() {
+            if (rawObj != null) {
+                raw = rawObj.toString();
+                rawObj = null;
+            }
+            return raw == null ? "" : raw;
+        }
 
         public boolean isThinking() {
             return type == B_THINKING;
@@ -161,6 +232,8 @@ public final class Models {
             JSONObject o = new JSONObject();
             try {
                 o.put("t", type);
+                String rw = rawJson();
+                if (!rw.isEmpty()) o.put("rw", rw);
                 if (!text.isEmpty()) o.put("x", text);
                 if (!signature.isEmpty()) o.put("sg", signature);
                 if (startedAt > 0) o.put("s", startedAt);
@@ -195,6 +268,7 @@ public final class Models {
         public static Block from(JSONObject o) {
             Block b = new Block();
             b.type = o.optInt("t", B_TEXT);
+            b.raw = o.optString("rw");
             b.text = o.optString("x");
             b.signature = o.optString("sg");
             b.startedAt = o.optLong("s");
@@ -242,6 +316,8 @@ public final class Models {
         public Usage usage;
         /** 发送给模型的答复正文快照：后续轮次复用它，避免前缀漂移导致缓存失效 */
         public String sentText = "";
+        /** 协议原生的 assistant 内容（Anthropic: 块数组 JSON；OpenAI: 消息对象 JSON） */
+        public String rawJson = "";
 
         public Message copyShell() {
             Message m = new Message();
@@ -306,6 +382,7 @@ public final class Models {
                 if (activeVersion != 0) o.put("av", activeVersion);
                 if (usage != null) o.put("us", usage.toJson());
                 if (sentText != null && !sentText.isEmpty()) o.put("sn", sentText);
+                if (rawJson != null && !rawJson.isEmpty()) o.put("raw", rawJson);
                 if (refused) o.put("rf", true);
             } catch (Exception ignored) {
             }
@@ -333,6 +410,7 @@ public final class Models {
             m.activeVersion = o.optInt("av");
             m.usage = Usage.from(o.optJSONObject("us"));
             m.sentText = o.optString("sn");
+            m.rawJson = o.optString("raw");
             m.refused = o.optBoolean("rf", false);
             return m;
         }
