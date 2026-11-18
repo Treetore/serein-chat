@@ -28,3 +28,13 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 ### 校验
 - 包名 `com.serein.chat`，versionCode 12，minSdk 26 / targetSdk 35
 - SHA-256：`aa0533673a3297e156f188f07728e676029bbfa96f72dcd378f87b15a8647820`
+
+### 热修复（同版本 2.00）
+- **上传的文档没有进入上下文**：此前只有 Anthropic 协议会走 Files API，
+  OpenAI / Responses 协议下附件从不上传，模型只看到一段文字。
+  现在官方服务商在任何协议下都会先上传换取 ile_id（Anthropic 用 /anthropic/v1/files，
+  其余用 /files），并补齐 Responses 的 input_file / input_image 内容块。
+
+### 热修复校验
+- 包名 com.serein.chat，versionCode 12 / versionName 2.00（未升版本）
+- SHA-256：\$sha

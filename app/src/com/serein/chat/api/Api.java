@@ -111,7 +111,7 @@ public final class Api {
             body.put("safety_check", new JSONObject().put("level", "high"));
             if (req.withTitle) body.put("title", new JSONObject().put("enabled", true));
         }
-        body.put("input", responseInput(req));
+        body.put("input", responseInput(p, req));
 
         HttpURLConnection conn = open(trimSlash(p.baseUrl) + "/responses", p.apiKey, true);
         try {
@@ -250,7 +250,7 @@ public final class Api {
     }
 
     /** Responses API 的 input item 列表：逐轮 message，正文用字符串形式。 */
-    private static JSONArray responseInput(ChatRequest req) throws Exception {
+    private static JSONArray responseInput(Provider p, ChatRequest req) throws Exception {
         JSONArray arr = new JSONArray();
         String pendingReminder = null;
         for (Turn t : req.turns) {
@@ -269,7 +269,34 @@ public final class Api {
             JSONObject m = new JSONObject();
             m.put("type", "message");
             m.put("role", user ? "user" : "assistant");
-            m.put("content", text);
+            if (user) {
+                List<Models.FileRef> docs = usableDocs(t);
+                List<Models.FileRef> imgs = req.vision ? usableImages(t) : new ArrayList<>();
+                if (!docs.isEmpty() || !imgs.isEmpty()) {
+                    JSONArray content = new JSONArray();
+                    if (!text.isEmpty()) {
+                        content.put(new JSONObject().put("type", "input_text").put("text", text));
+                    }
+                    for (Models.FileRef d : docs) {
+                        content.put(new JSONObject().put("type", "input_file")
+                                .put("file_id", d.serverId));
+                    }
+                    for (Models.FileRef f : imgs) {
+                        JSONObject blk = new JSONObject().put("type", "input_image");
+                        if (f.serverId != null && !f.serverId.isEmpty() && p.official()) {
+                            blk.put("file_id", f.serverId);
+                        } else {
+                            blk.put("image_url", "data:" + mediaType(f) + ";base64," + base64(f));
+                        }
+                        content.put(blk);
+                    }
+                    m.put("content", content);
+                } else {
+                    m.put("content", text);
+                }
+            } else {
+                m.put("content", text);
+            }
             arr.put(m);
         }
         return arr;
@@ -1311,7 +1338,9 @@ public final class Api {
         String boundary = "----DeepSeekBoundary" + System.currentTimeMillis();
         HttpURLConnection conn = null;
         try {
-            String url = trimSlash(p.baseUrl) + "/anthropic/v1/files";
+            // Anthropic 协议走 /anthropic/v1/files；OpenAI / Responses 走 /files
+            boolean anth = Provider.PROTO_ANTHROPIC.equals(p.protocol);
+            String url = trimSlash(p.baseUrl) + (anth ? "/anthropic/v1/files" : "/files");
             conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(20000);
@@ -1319,7 +1348,8 @@ public final class Api {
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             conn.setRequestProperty("x-api-key", p.apiKey);
-            conn.setRequestProperty("anthropic-beta", FILES_BETA);
+            conn.setRequestProperty("Authorization", "Bearer " + p.apiKey);
+            if (anth) conn.setRequestProperty("anthropic-beta", FILES_BETA);
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("User-Agent", UA);
 

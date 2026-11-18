@@ -1604,7 +1604,8 @@ public class MainActivity extends Activity implements
                         throw new Exception(getString(R.string.no_vision_hint));
                     }
                 }
-                if (target.official() && Provider.PROTO_ANTHROPIC.equals(target.protocol)) {
+                if (target.official()) {
+                    // 官方服务商：任何协议都先走 Files API 换 file_id（各协议端点不同，Api 内部处理）
                     // DeepSeek 走 Files API 换取 file_id；purpose 决定解析方式
                     String lower = name.toLowerCase();
                     boolean textFile = ref.image == false && (lower.endsWith(".txt") || lower.endsWith(".md")
