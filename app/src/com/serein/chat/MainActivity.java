@@ -910,10 +910,14 @@ public class MainActivity extends Activity implements
                             headerTitle.setText(sessionTitle);
                             refreshDrawer();
                         }
-                        if ("refusal".equals(failureNote)) {
-                            reply.blocks.removeIf(b -> b.type == Models.B_TEXT || b.type == Models.B_THINKING);
-                            finishStream(reply, Models.S_ERROR, getString(R.string.message_refused));
-                        } else if ("refusal".equals(stopReason)) {
+                        if ("refusal".equals(failureNote) || "refusal".equals(stopReason)) {
+                            // 服务端拒答：用统一文案替换已展示内容，该轮不进入后续上下文
+                            reply.blocks.clear();
+                            Models.Block rb = new Models.Block();
+                            rb.type = Models.B_TEXT;
+                            rb.text = getString(R.string.message_refused);
+                            reply.blocks.add(rb);
+                            reply.refused = true;
                             finishStream(reply, Models.S_DONE, null);
                         } else {
                             finishStream(reply, cancelled.get() ? Models.S_STOPPED : Models.S_DONE, null);
@@ -1000,8 +1004,8 @@ public class MainActivity extends Activity implements
         req.model = currentNodeModel();
         req.system = provider != null && provider.official() ? getString(R.string.app_identity) : "";
         req.thinking = prefs.thinking() && info != null && info.thinking;
-        req.thinkingBudget = req.thinking && provider != null && provider.official()
-                ? budgetFor(prefs.thinkingLevel()) : 0;
+        req.effort = req.thinking && provider != null && provider.official()
+                ? effortFor(prefs.thinkingLevel()) : null;
         req.search = prefs.search() && provider != null && provider.official();
         req.vision = info == null || info.vision;
         req.withTitle = withTitle && provider != null && provider.official();
@@ -1010,7 +1014,7 @@ public class MainActivity extends Activity implements
             Models.Message u = history.get(i);
             Models.Message a = history.get(i + 1);
             if (u.role != Models.ROLE_USER || a.role != Models.ROLE_ASSISTANT) continue;
-            if (Models.S_ERROR.equals(a.status)) continue;
+            if (Models.S_ERROR.equals(a.status) || a.refused) continue;
             String answer = a.contextText();
             if (answer.trim().isEmpty()) continue;
             req.turns.add(userTurn(u));
@@ -1229,9 +1233,9 @@ public class MainActivity extends Activity implements
         prefs.setThinkingLevel(level);
     }
 
-    /** 三档思考强度对应的预算 token。 */
-    private static int budgetFor(int level) {
-        return level == 0 ? 1024 : level == 2 ? 16384 : 4096;
+    /** 三档思考强度：低 / 高 / 最高，对应文档的 low / high / max。 */
+    private static String effortFor(int level) {
+        return level == 0 ? "low" : level == 2 ? "max" : "high";
     }
 
     @Override

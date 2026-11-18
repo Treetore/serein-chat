@@ -147,8 +147,8 @@
     <string name="bg_dim">Background dim</string>
     <string name="thinking_strength">Thinking effort</string>
     <string name="level_low">Low</string>
-    <string name="level_mid">Medium</string>
-    <string name="level_high">High</string>
+    <string name="level_mid">High</string>
+    <string name="level_high">Max</string>
     <string name="strength_badge">Think·%1$s</string>
     <string name="balance_title">Balance &amp; usage</string>
     <string name="balance_total">Available</string>
@@ -171,4 +171,5 @@
     <string name="export_desc">All chats, in the official DeepSeek export layout</string>
     <string name="top_up">Top up</string>
     <string name="usage_query">Usage</string>
+    <string name="cap_server_params">Note: with thinking or web tools enabled, sampling parameters such as temperature and top_p are decided by the server.</string>
 </resources>

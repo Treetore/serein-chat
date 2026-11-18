@@ -90,8 +90,11 @@ public final class Api {
         body.put("stream", true);
         JSONObject thinking = new JSONObject();
         thinking.put("type", req.thinking ? "enabled" : "disabled");
-        if (req.thinking && req.thinkingBudget > 0) thinking.put("budget_tokens", req.thinkingBudget);
         body.put("thinking", thinking);
+        // 思考强度走 output_config.effort（low/high/max），budget_tokens 不是强度开关
+        if (req.thinking && req.effort != null && !req.effort.isEmpty()) {
+            body.put("output_config", new JSONObject().put("effort", req.effort));
+        }
         if (!p.official()) body.put("max_tokens", MAX_TOKENS);
 
         if (p.official()) {
@@ -203,7 +206,8 @@ public final class Api {
                     if (finished) break;
                 }
             }
-            l.onMessageEnd(stopReason, title, null);
+            l.onMessageEnd(stopReason, title,
+                    "refusal".equals(stopReason) ? "refusal" : null);
         } finally {
             conn.disconnect();
         }
@@ -238,6 +242,13 @@ public final class Api {
         body.put("model", req.model);
         body.put("stream", true);
         body.put("stream_options", new JSONObject().put("include_usage", true));
+        if (p.official()) {
+            // 思考开关与强度（官方兼容层字段，三方服务不猜测）
+            body.put("thinking", new JSONObject().put("type", req.thinking ? "enabled" : "disabled"));
+            if (req.thinking && req.effort != null && !req.effort.isEmpty()) {
+                body.put("reasoning_effort", req.effort);
+            }
+        }
 
         JSONArray prefix;
         try {
@@ -333,7 +344,9 @@ public final class Api {
             if (thinkIndex >= 0) l.onBlockStop(thinkIndex);
             if (textIndex >= 0) l.onBlockStop(textIndex);
             if (usage != null) l.onUsage(usage);
-            l.onMessageEnd(finish.isEmpty() ? "end_turn" : finish, null, null);
+            String stop = finish.isEmpty() ? "end_turn" : finish;
+            l.onMessageEnd(stop, null,
+                    "content_filter".equals(finish) || "refusal".equals(finish) ? "refusal" : null);
         } finally {
             conn.disconnect();
         }
@@ -384,7 +397,9 @@ public final class Api {
                 index++;
             }
         }
-        l.onMessageEnd(o.optString("stop_reason", "end_turn"), emptyToNull(o.optString("title")), null);
+        String wholeStop = o.optString("stop_reason", "end_turn");
+        l.onMessageEnd(wholeStop, emptyToNull(o.optString("title")),
+                "refusal".equals(wholeStop) ? "refusal" : null);
     }
 
     private static void emitOpenAiWhole(String text, Listener l) throws ApiException {

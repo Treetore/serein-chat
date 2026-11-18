@@ -1,5 +1,18 @@
 # 更新日志
 
+## v1.01 — 对齐官方思考参数与拒答处理
+
+### 修复
+- **思考强度改为 `output_config.effort`（low / high / max）**：原实现的 `thinking.budget_tokens` 被服务端忽略，
+  三档实际不生效；OpenAI 兼容协议改用 `reasoning_effort`
+- **三档文案更正**：低 / 高 / 最高（官方映射为 medium→high，原来的「中」会误导）
+- **拒答处理**：`stop_reason: refusal` / `finish_reason: content_filter` 时用统一文案替换已展示内容，
+  该轮不再进入后续上下文（此前会残留半截答案并污染上下文）
+
+### 其它
+- 模型能力弹窗提示：开启思考或联网时，temperature / top_p 等采样参数由服务端接管
+- 版本号 1.0.0 → 1.01（versionCode 2）
+
 ## v1.00 — 首个公开发行版
 
 首个可发布版本，功能与安全基线完成。

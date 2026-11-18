@@ -10,8 +10,8 @@ public final class ChatRequest {
     public String system = "";
     public final List<Turn> turns = new ArrayList<>();
     public boolean thinking;
-    /** 思考强度对应的预算 token（0 表示不下发） */
-    public int thinkingBudget;
+    /** 思考强度：low / high / max（null 或空表示不下发） */
+    public String effort;
     /** 是否声明服务端联网搜索工具（仅 DeepSeek 官方支持） */
     public boolean search;
     /** 是否允许发送图片（由模型能力决定） */

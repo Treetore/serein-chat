@@ -229,6 +229,8 @@ public final class Models {
         public final List<Block> blocks = new ArrayList<>();
         public String status = S_DONE;
         public String stopReason = "";
+        /** 服务端判定拒答：内容不进入后续上下文 */
+        public boolean refused;
         public boolean thinking;
         public boolean search;
         public String model = "";
@@ -304,6 +306,7 @@ public final class Models {
                 if (activeVersion != 0) o.put("av", activeVersion);
                 if (usage != null) o.put("us", usage.toJson());
                 if (sentText != null && !sentText.isEmpty()) o.put("sn", sentText);
+                if (refused) o.put("rf", true);
             } catch (Exception ignored) {
             }
             return o;
@@ -330,6 +333,7 @@ public final class Models {
             m.activeVersion = o.optInt("av");
             m.usage = Usage.from(o.optJSONObject("us"));
             m.sentText = o.optString("sn");
+            m.refused = o.optBoolean("rf", false);
             return m;
         }
     }

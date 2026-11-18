@@ -354,6 +354,9 @@ public final class SettingsPanels {
 
         TextView auto = Ui.text(c, c.getString(R.string.cap_detected, caps(c, m)), 12, t.labelTertiary);
         box.addView(auto);
+        TextView note = Ui.text(c, c.getString(R.string.cap_server_params), 11, t.labelCaption);
+        note.setPadding(0, Ui.dp(6), 0, Ui.dp(2));
+        box.addView(note);
 
         CheckBox vision = check(c, t, c.getString(R.string.cap_vision), m.vision);
         CheckBox tools = check(c, t, c.getString(R.string.cap_tools), m.tools);
