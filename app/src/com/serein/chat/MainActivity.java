@@ -196,6 +196,9 @@ public class MainActivity extends Activity implements
                 buildUi();
             }
         }
+        if ("1".equals(it.getStringExtra("newchat"))) {
+            main.postDelayed(this::newChat, 200);
+        }
         if ("1".equals(it.getStringExtra("autosend"))) {
             String text = it.getStringExtra(Intent.EXTRA_TEXT);
             if (text != null && !text.trim().isEmpty()) {

@@ -126,6 +126,7 @@ public final class Api {
             int nextIndex = 0;
             boolean started = false;
             String finish = "end_turn";
+            String aiTitle = null;
             Usage usage = null;
 
             while ((line = reader.readLine()) != null) {
@@ -217,6 +218,8 @@ public final class Api {
                         || "response.failed".equals(type)) {
                     JSONObject resp = o.optJSONObject("response");
                     if (resp != null) {
+                        String t = str(resp, "title");
+                        if (!t.isEmpty()) aiTitle = t;
                         Usage u = responseUsage(resp.optJSONObject("usage"));
                         if (u != null) {
                             usage = u;
@@ -237,9 +240,9 @@ public final class Api {
             if (textIndex >= 0) l.onBlockStop(textIndex);
             if (usage != null) l.onUsage(usage);
             if ("refusal".equals(finish)) {
-                l.onMessageEnd(finish, null, "refusal");
+                l.onMessageEnd(finish, aiTitle, "refusal");
             } else {
-                l.onMessageEnd(finish, null, null);
+                l.onMessageEnd(finish, aiTitle, null);
             }
         } finally {
             conn.disconnect();
@@ -498,6 +501,7 @@ public final class Api {
             int nextIndex = 0;
             boolean started = false;
             String finish = "";
+            String aiTitle = null;
             Usage usage = null;
 
             while ((line = reader.readLine()) != null) {
@@ -542,11 +546,14 @@ public final class Api {
                     l.onThinkingDelta(thinkIndex, reasoning);
                 }
                 if (!fr.isEmpty()) {
-                    // 工具调用与引用只在带 finish_reason 的最后一个 chunk 下发
+                    // 工具调用与引用、会话标题只在带 finish_reason 的最后一个 chunk 下发
                     int[] idx = new int[]{nextIndex, textIndex};
                     readServerTools(delta, l, idx);
                     nextIndex = idx[0];
                     textIndex = idx[1];
+                    String t = str(delta, "title");
+                    if (t.isEmpty()) t = str(o, "title");
+                    if (!t.isEmpty()) aiTitle = t;
                 }
                 String content = str(delta, "content");
                 if (!content.isEmpty()) {
@@ -567,7 +574,7 @@ public final class Api {
             if (textIndex >= 0) l.onBlockStop(textIndex);
             if (usage != null) l.onUsage(usage);
             String stop = finish.isEmpty() ? "end_turn" : finish;
-            l.onMessageEnd(stop, null,
+            l.onMessageEnd(stop, aiTitle,
                     "content_filter".equals(finish) || "refusal".equals(finish) ? "refusal" : null);
         } finally {
             conn.disconnect();

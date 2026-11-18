@@ -44,8 +44,8 @@ $gen = Join-Path $Bld 'gen'; $cls = Join-Path $Bld 'classes'; $dex = Join-Path $
 foreach ($d in @($gen, $cls, $dex)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
 
 $ts = [DateTime]::Now
-$versionCode = 9
-$versionName = '1.70'
+$versionCode = 10
+$versionName = '1.80'
 
 # ---------- 1. AAPT2 compile ----------
 Step 'aapt2 compile'
@@ -122,7 +122,7 @@ if (-not (Test-Path $ks)) {
         -dname "CN=Serein Chat, O=Serein, C=CN"
     if ($LASTEXITCODE -ne 0) { Fail 'keytool failed' }
 }
-$final = Join-Path $Out 'SereinChat-1.70.apk'
+$final = Join-Path $Out 'SereinChat-1.80.apk'
 if (Test-Path $final) { Remove-Item $final -Force }
 & $ApkSigner sign --ks $ks --ks-pass pass:android --key-pass pass:android `
     --ks-key-alias serein --min-sdk-version $MinSdk `

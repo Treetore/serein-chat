@@ -11,6 +11,25 @@
   `server_tool_calls`（来源）与 `annotations`（引用）
 - 同时补齐该协议下的 `safety_check` 与 `title`
 
+## v1.80 — 会话标题 AI 起名（三种协议全支持）
+
+### 新增
+- **AI 会话标题**：每轮请求携带 `title: {enabled: true}`（仅官方服务商），服务端返回的标题写入会话名并即时刷新顶栏与侧边栏
+  - Responses：读 `response.title`
+  - OpenAI：读最后一个 chunk 的 `delta.title`（兼容顶层 `title`）
+  - Anthropic：沿用既有 `message_delta.title` 解析
+- **兜底**：服务端未返回标题时，仍用首条用户消息截断作为会话名
+
+### 调试增强
+- 调试 intent 新增 `-e newchat 1`：新建会话，便于联调标题生成
+
+### 验证（真机 23113RKC6C / Android 16，Responses 协议）
+发送「介绍一下量子纠缠的基本概念」→ 顶栏标题变为 **「量子纠缠基本概念」**
+（省略了"介绍一下""的"，确认是模型生成而非文本截断）
+
+### 其它
+- 版本 1.70 → 1.80（versionCode 10）
+
 ## v1.70 — Responses API（第三种协议）
 
 ### 新增
