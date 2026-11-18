@@ -1,5 +1,24 @@
 # 更新日志
 
+## v1.30 — 文档解析（Files API）
+
+### 新增
+- 附件支持 **PDF / Word / PowerPoint / 图片**，走 `POST /anthropic/v1/files` 先解析换取 `file_id`
+- 按类型自动选择 `purpose`：文档 `text_recognition`、纯文本类（txt/md/csv/json/代码）`user_data`
+- 用户在消息里以 `{"type":"document","source":{"type":"file","file_id":...}}` 引用，排在正文之前
+- 对话请求补发 `anthropic-beta: files-api-2025-04-14`
+- 附件不再被「模型无视觉能力」拦截：文档解析不依赖视觉，图片仍按能力校验
+
+### 验证（模拟器 + 服务端探针）
+\`\`\`
+UPLOAD purpose=user_data bytes=398
+DOC blocks=['document:file:file_mock_1', 'text']
+ctx_roles=latest_reminder,user
+\`\`\`
+
+### 其它
+- 版本号 1.20 → 1.30（versionCode 5）
+
 ## v1.20 — 用户元信息标记与深度搜索展示
 
 ### 新增

@@ -1262,11 +1262,7 @@ public class MainActivity extends Activity implements
 
     @Override
     public void onAttach() {
-        Provider.ModelInfo info = currentModelInfo();
-        if (info != null && !info.vision) {
-            Ui.toast(this, getString(R.string.no_vision_hint));
-            return;
-        }
+        // 文档解析不依赖视觉能力，是否可用在选完文件后按类型判断
         if (pendingFiles.size() >= MAX_FILES) {
             Ui.toast(this, getString(R.string.attach_limit, MAX_FILES));
             return;
@@ -1452,12 +1448,23 @@ public class MainActivity extends Activity implements
                 in.close();
                 out.close();
                 ref.localPath = cache.getAbsolutePath();
+                if (ref.image) {
+                    Provider.ModelInfo info = currentModelInfo();
+                    if (info != null && !info.vision) {
+                        throw new Exception(getString(R.string.no_vision_hint));
+                    }
+                }
                 if (target.official() && Provider.PROTO_ANTHROPIC.equals(target.protocol)) {
-                    // DeepSeek 走 Files API 换取 file_id
-                    boolean layout = ref.mime.contains("pdf") || ref.mime.contains("word")
-                            || ref.mime.contains("presentation") || name.toLowerCase().endsWith(".docx")
-                            || name.toLowerCase().endsWith(".pptx");
-                    ref.serverId = Api.uploadFile(target, cache, ref.mime, layout, cancelFlag);
+                    // DeepSeek 走 Files API 换取 file_id；purpose 决定解析方式
+                    String lower = name.toLowerCase();
+                    boolean textFile = ref.image == false && (lower.endsWith(".txt") || lower.endsWith(".md")
+                            || lower.endsWith(".csv") || lower.endsWith(".json") || lower.endsWith(".log")
+                            || lower.endsWith(".xml") || lower.endsWith(".yaml") || lower.endsWith(".yml")
+                            || lower.endsWith(".java") || lower.endsWith(".py") || lower.endsWith(".js")
+                            || lower.endsWith(".ts") || lower.endsWith(".kt"));
+                    String purpose = ref.image ? null
+                            : textFile ? Api.PURPOSE_USER_DATA : Api.PURPOSE_TEXT;
+                    ref.serverId = Api.uploadFile(target, cache, ref.mime, purpose, cancelFlag);
                 }
                 // 其它服务商：不预上传，发送时按 base64 内联（需模型具备视觉能力）
                 ref.status = "ready";

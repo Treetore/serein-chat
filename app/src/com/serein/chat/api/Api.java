@@ -456,11 +456,16 @@ public final class Api {
             return new JSONObject().put("role", "assistant")
                     .put("content", new JSONObject().put("type", "text").put("text", t.text));
         }
+        List<Models.FileRef> docs = usableDocs(t);
         List<Models.FileRef> files = req.vision ? usableImages(t) : new ArrayList<>();
-        if (files.isEmpty()) {
+        if (docs.isEmpty() && files.isEmpty()) {
             return new JSONObject().put("role", "user").put("content", t.text);
         }
         JSONArray content = new JSONArray();
+        for (Models.FileRef d : docs) {
+            content.put(new JSONObject().put("type", "document")
+                    .put("source", new JSONObject().put("type", "file").put("file_id", d.serverId)));
+        }
         for (Models.FileRef f : files) {
             JSONObject src = p.official() && f.serverId != null && !f.serverId.isEmpty()
                     ? new JSONObject().put("type", "file").put("file_id", f.serverId)
@@ -724,6 +729,17 @@ public final class Api {
         return r;
     }
 
+    /** 非图片且已上传拿到 file_id 的附件按文档引用 */
+    private static List<Models.FileRef> usableDocs(Turn t) {
+        List<Models.FileRef> out = new ArrayList<>();
+        for (Models.FileRef f : t.files) {
+            if (f.image) continue;
+            if (f.serverId == null || f.serverId.isEmpty()) continue;
+            out.add(f);
+        }
+        return out;
+    }
+
     private static List<Models.FileRef> usableImages(Turn t) {
         List<Models.FileRef> out = new ArrayList<>();
         for (Models.FileRef f : t.files) {
@@ -850,7 +866,11 @@ public final class Api {
     }
 
     /** 上传附件（仅 Anthropic 兼容端点提供 Files API）。 */
-    public static String uploadFile(Provider p, File file, String mime, boolean needsLayout,
+    public static final String PURPOSE_TEXT = "text_recognition";
+    public static final String PURPOSE_LAYOUT = "rich_layout_recognition";
+    public static final String PURPOSE_USER_DATA = "user_data";
+
+    public static String uploadFile(Provider p, File file, String mime, String purpose,
                                     AtomicBoolean cancelled) throws ApiException {
         String boundary = "----DeepSeekBoundary" + System.currentTimeMillis();
         HttpURLConnection conn = null;
@@ -870,8 +890,9 @@ public final class Api {
             OutputStream os = conn.getOutputStream();
             boolean isImage = mime != null && mime.startsWith("image/");
             if (!isImage) {
+                // purpose 必须出现在 file 字段之前
                 writeField(os, boundary, "purpose",
-                        needsLayout ? "rich_layout_recognition" : "user_data");
+                        purpose == null || purpose.isEmpty() ? PURPOSE_TEXT : purpose);
             }
             String safeName = file.getName().replace("\"", "_");
             os.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
