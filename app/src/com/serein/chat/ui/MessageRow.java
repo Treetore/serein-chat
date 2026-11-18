@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.serein.chat.R;
 import com.serein.chat.data.Models;
+import com.serein.chat.data.Price;
 import com.serein.chat.md.MarkdownView;
 
 import java.util.ArrayList;
@@ -539,6 +540,12 @@ public final class MessageRow extends LinearLayout {
         if (u.firstTokenMs > 0) {
             sb.append(" · ").append(ctx.getString(R.string.usage_ft,
                     String.format(java.util.Locale.US, "%.1fs", u.firstTokenMs / 1000.0)));
+        }
+        String model = msg.model == null ? "" : msg.model;
+        long ts = msg.createdAt > 0 ? msg.createdAt : System.currentTimeMillis();
+        String costText = Price.format(Price.yuan(u, model, ts));
+        if (!costText.isEmpty()) {
+            sb.append(" · ").append(ctx.getString(R.string.usage_cost, costText));
         }
         String line = sb.toString();
         TextView tv = Ui.text(getContext(), line, 11, t.labelCaption);

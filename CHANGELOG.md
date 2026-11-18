@@ -11,6 +11,18 @@
   `server_tool_calls`（来源）与 `annotations`（引用）
 - 同时补齐该协议下的 `safety_check` 与 `title`
 
+## v2.00 — 每轮费用估算 + Actions 修复
+
+### 新增
+- 用量行最右侧显示**本轮费用估算**（按官方定价：分模型、分缓存命中/未命中、分高峰/空闲时段）
+
+### 修复
+- GitHub Actions 三次失败：`android-actions/setup-android` 的 `sdkmanager --licenses` 缺少 `--sdk_root`，
+  改为手工安装 cmdline-tools 并显式传参
+
+### 其它
+- 版本 1.90 → 2.00（versionCode 12）
+
 ## v1.90 — 本地性能统计面板
 
 ### 新增
