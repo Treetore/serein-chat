@@ -1242,7 +1242,7 @@ public final class Api {
         if (text == null || text.trim().isEmpty()) return "empty";
         HttpURLConnection conn = null;
         try {
-            conn = (HttpURLConnection) new URL(trimSlash(p.baseUrl) + "/v1/tools/tts").openConnection();
+            conn = (HttpURLConnection) new URL(toolsUrl(p, "tts")).openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(20000);
             conn.setReadTimeout(120000);
@@ -1261,7 +1261,9 @@ public final class Api {
             os.close();
             int code = conn.getResponseCode();
             if (code >= 400) {
-                return "HTTP " + code + " " + readAll(conn.getErrorStream());
+                String eb = readAll(conn.getErrorStream());
+                android.util.Log.d("TTS", "url=" + conn.getURL() + " code=" + code + " body=" + eb);
+                return "HTTP " + code + " " + eb + " @" + conn.getURL();
             }
             InputStream in = conn.getInputStream();
             FileOutputStream fos = new FileOutputStream(outFile);
@@ -1288,35 +1290,50 @@ public final class Api {
     }
 
     /** 语音识别：上传 16 位 PCM WAV，返回转写文本；失败返回 null 并写 err。 */
+    /** 语音工具端点：{origin}/v1/tools/{tool}；base 带 /anthropic 或 /v1 时自动归一。 */
+    private static String toolsUrl(Provider p, String tool) {
+        String base = trimSlash(p.baseUrl == null ? "" : p.baseUrl);
+        if (base.endsWith("/anthropic")) base = base.substring(0, base.length() - 10);
+        if (base.endsWith("/v1")) return base + "/tools/" + tool;
+        return base + "/v1/tools/" + tool;
+    }
+
     public static String asr(Provider p, File wav, String[] err) {
         String boundary = "----SereinAsr" + System.currentTimeMillis();
         HttpURLConnection conn = null;
         try {
-            conn = (HttpURLConnection) new URL(trimSlash(p.baseUrl) + "/v1/tools/asr").openConnection();
+            conn = (HttpURLConnection) new URL(toolsUrl(p, "asr")).openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(20000);
             conn.setReadTimeout(180000);
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             conn.setRequestProperty("Authorization", "Bearer " + p.apiKey);
+            conn.setRequestProperty("x-api-key", p.apiKey);
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("User-Agent", UA);
+            byte[] head = ("--" + boundary + "\r\n"
+                    + "Content-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\n"
+                    + "Content-Type: audio/wav\r\n\r\n").getBytes(StandardCharsets.UTF_8);
+            byte[] tail = ("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8);
+            long total = (long) head.length + wav.length() + tail.length;
+            conn.setFixedLengthStreamingMode(total);
             OutputStream os = conn.getOutputStream();
-            os.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-            os.write(("Content-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\n")
-                    .getBytes(StandardCharsets.UTF_8));
-            os.write("Content-Type: audio/wav\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            os.write(head);
             FileInputStream fis = new FileInputStream(wav);
             byte[] buf = new byte[8192];
             int n;
             while ((n = fis.read(buf)) > 0) os.write(buf, 0, n);
             fis.close();
-            os.write("\r\n".getBytes(StandardCharsets.UTF_8));
-            os.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            os.write(tail);
             os.close();
             int code = conn.getResponseCode();
             if (code >= 400) {
-                if (err != null && err.length > 0) err[0] = "HTTP " + code + " " + readAll(conn.getErrorStream());
+                String body = readAll(conn.getErrorStream());
+                android.util.Log.d("ASR", "url=" + conn.getURL() + " code=" + code + " body=" + body);
+                if (err != null && err.length > 0) {
+                    err[0] = "HTTP " + code + " " + body + " @" + conn.getURL();
+                }
                 return null;
             }
             JSONObject o = new JSONObject(readAll(decoded(conn)));
