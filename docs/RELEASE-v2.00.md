@@ -55,3 +55,12 @@ Error: The process 'C:\Android\android-sdk\cmdline-tools\16.0\bin\sdkmanager.bat
 
 ### 第三批校验
 - SHA-256：\$sha
+
+### 热修复（同版本 2.00 · 第四批）
+- **语音识别 403**：ASR/TTS 的端点改为统一归一化构造（base 带 /anthropic 或 /v1 时自动纠正），
+  请求体改用 setFixedLengthStreamingMode 声明长度（避免 chunked 被网关拒绝），并同时携带
+  Authorization: Bearer 与 x-api-key
+- 失败提示现在包含 HTTP 状态、响应体与请求 URL，便于定位
+
+### 第四批校验
+- SHA-256：\$sha
